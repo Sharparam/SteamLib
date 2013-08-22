@@ -78,7 +78,7 @@ namespace Sharparam.SteamLib
             _steamFriends002.SetPersonaState(state);
         }
 
-        public int GetFriendCount(EFriendFlags flags)
+        public int GetFriendCount(EFriendFlags flags = EFriendFlags.k_EFriendFlagImmediate)
         {
             return _steamFriends002.GetFriendCount(flags);
         }
