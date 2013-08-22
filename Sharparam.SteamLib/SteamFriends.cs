@@ -83,7 +83,7 @@ namespace Sharparam.SteamLib
             return _steamFriends002.GetFriendCount(flags);
         }
 
-        public CSteamID GetFriendByIndex(int index, EFriendFlags flags)
+        public CSteamID GetFriendByIndex(int index, EFriendFlags flags = EFriendFlags.k_EFriendFlagImmediate)
         {
             return _steamFriends002.GetFriendByIndex(index, flags);
         }
