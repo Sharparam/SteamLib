@@ -31,7 +31,7 @@ namespace Sharparam.SteamLib
 {
     public class FriendsManager
     {
-        private readonly ILog _log;
+        private readonly log4net.ILog _log;
 
         public event FriendsUpdatedEventHandler FriendsUpdated;
 

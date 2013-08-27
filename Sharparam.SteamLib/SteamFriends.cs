@@ -29,7 +29,7 @@ namespace Sharparam.SteamLib
 {
     public class SteamFriends
     {
-        private readonly ILog _log;
+        private readonly log4net.ILog _log;
 
         private readonly ISteamFriends002 _steamFriends002; // Chat
         private readonly ISteamFriends013 _steamFriends013; // Avatars

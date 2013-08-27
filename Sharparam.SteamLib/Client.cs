@@ -31,7 +31,7 @@ namespace Sharparam.SteamLib
         // Events
         public event ChatMessageReceivedEventHandler ChatMessageReceived;
 
-        private readonly ILog _log;
+        private readonly log4net.ILog _log;
 
         private bool _isDisposed;
 
