@@ -27,42 +27,26 @@ using Steam4NET;
 
 namespace Sharparam.SteamLib
 {
-    public class SteamFriends
+    public class SteamHelper
     {
         private readonly log4net.ILog _log;
 
-        private readonly ISteamFriends002 _steamFriends002; // Chat
-        private readonly ISteamFriends013 _steamFriends013; // Avatars
-        private readonly IClientFriends _clientFriends; // The only one with nickname support
+        private readonly Steam _steam;
 
-        private readonly ISteamUtils005 _steamUtils; // Avatar utils
-
-        internal ISteamFriends002 SteamFriends002 { get { return _steamFriends002; } }
-        internal ISteamFriends013 SteamFriends013 { get { return _steamFriends013; } }
-        internal IClientFriends ClientFriends { get { return _clientFriends; } }
-
-        internal SteamFriends(
-            ISteamFriends002 steamFriends002,
-            ISteamFriends013 steamFriends013,
-            IClientFriends clientFriends,
-            ISteamUtils005 steamUtils)
+        internal SteamHelper(Steam steam)
         {
+            _steam = steam;
             _log = LogManager.GetLogger(this);	
-
-            _steamFriends002 = steamFriends002;
-            _steamFriends013 = steamFriends013;
-            _clientFriends = clientFriends;
-            _steamUtils = steamUtils;
         }
 
         public string GetMyName()
         {
-            return _steamFriends002.GetPersonaName();
+            return _steam.SteamFriends002.GetPersonaName();
         }
 
         public EPersonaState GetMyState()
         {
-            return _steamFriends002.GetPersonaState();
+            return _steam.SteamFriends002.GetPersonaState();
         }
 
         public string GetMyStateText()
@@ -75,32 +59,32 @@ namespace Sharparam.SteamLib
             if (GetMyState() == state)
                 return;
 
-            _steamFriends002.SetPersonaState(state);
+            _steam.SteamFriends002.SetPersonaState(state);
         }
 
         public int GetFriendCount(EFriendFlags flags = EFriendFlags.k_EFriendFlagImmediate)
         {
-            return _steamFriends002.GetFriendCount(flags);
+            return _steam.SteamFriends002.GetFriendCount(flags);
         }
 
         public CSteamID GetFriendByIndex(int index, EFriendFlags flags = EFriendFlags.k_EFriendFlagImmediate)
         {
-            return _steamFriends002.GetFriendByIndex(index, flags);
+            return _steam.SteamFriends002.GetFriendByIndex(index, flags);
         }
 
         public string GetFriendName(CSteamID id)
         {
-            return _steamFriends002.GetFriendPersonaName(id);
+            return _steam.SteamFriends002.GetFriendPersonaName(id);
         }
 
         public string GetFriendNickname(CSteamID id)
         {
-            return _clientFriends.GetPlayerNickname(id);
+            return _steam.ClientFriends.GetPlayerNickname(id);
         }
 
         public EPersonaState GetFriendState(CSteamID id)
         {
-            return _steamFriends002.GetFriendPersonaState(id);
+            return _steam.SteamFriends002.GetFriendPersonaState(id);
         }
 
         public string GetFriendStateText(CSteamID id)
@@ -114,19 +98,19 @@ namespace Sharparam.SteamLib
             switch (size)
             {
                 case EAvatarSize.k_EAvatarSize32x32:
-                    handle = _steamFriends013.GetSmallFriendAvatar(id);
+                    handle = _steam.SteamFriends013.GetSmallFriendAvatar(id);
                     break;
                 case EAvatarSize.k_EAvatarSize64x64:
-                    handle = _steamFriends013.GetMediumFriendAvatar(id);
+                    handle = _steam.SteamFriends013.GetMediumFriendAvatar(id);
                     break;
                 case EAvatarSize.k_EAvatarSize184x184:
-                    handle = _steamFriends013.GetLargeFriendAvatar(id);
+                    handle = _steam.SteamFriends013.GetLargeFriendAvatar(id);
                     break;
                 default:
-                    handle = _steamFriends013.GetLargeFriendAvatar(id);
+                    handle = _steam.SteamFriends013.GetLargeFriendAvatar(id);
                     break;
             }
-            var avatar = Utils.GetAvatarFromHandle(handle, _steamUtils);
+            var avatar = Utils.GetAvatarFromHandle(handle, _steam.SteamUtils);
             return avatar;
         }
 
@@ -149,7 +133,7 @@ namespace Sharparam.SteamLib
         {
             var data = new byte[4096];
             var type = EChatEntryType.k_EChatEntryTypeChatMsg;
-            var length = _steamFriends002.GetChatMessage(receiver, chatId, data, ref type);
+            var length = _steam.SteamFriends002.GetChatMessage(receiver, chatId, data, ref type);
             var msg = Encoding.UTF8.GetString(data, 0, length - 1);
             var message = new ChatMessage(sender, receiver, type, msg);
             return message;
@@ -172,7 +156,7 @@ namespace Sharparam.SteamLib
         {
             if (type == EChatEntryType.k_EChatEntryTypeEmote)
                 _log.Warn("Steam no longer supports sending emotes to chat");
-            _steamFriends002.SendMsgToFriend(receiver, type, Encoding.UTF8.GetBytes(message));
+            _steam.SteamFriends002.SendMsgToFriend(receiver, type, Encoding.UTF8.GetBytes(message));
         }
 
         public void SendChatMessage(CSteamID receiver, string message)

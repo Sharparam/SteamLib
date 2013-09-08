@@ -33,20 +33,9 @@ namespace Sharparam.SteamLib
 
         private readonly log4net.ILog _log;
 
-        private bool _isDisposed;
-
-        // Interfaces
-        private readonly ISteamClient012 _steamClient;
-        private readonly IClientEngine _clientEngine;
-
-        private readonly ISteamFriends002 _steamFriends002;
-        private readonly ISteamFriends013 _steamFriends013;
-        private readonly IClientFriends _clientFriends;
-
-        private readonly ISteamUser016 _steamUser;
         private readonly ISteamUtils005 _steamUtils;
 
-        private readonly SteamFriends _steamFriends;
+        private readonly SteamHelper _steamHelper;
 
         private readonly FriendsManager _friendsManager;
 
@@ -59,90 +48,12 @@ namespace Sharparam.SteamLib
         private Callback<PersonaStateChange_t> _personaStateChangeCallback;
         private Callback<FriendProfileInfoResponse_t> _friendProfileInfoResponseCallback;
 
-        // Accessors
-        public CSteamID Me { get { return _steamUser.GetSteamID(); } }
-        public SteamFriends SteamFriends { get { return _steamFriends; } }
-        public FriendsManager FriendsManager { get { return _friendsManager; } }
-
         public Client()
         {
             _log = LogManager.GetLogger(this);
 
-            _log.Debug(">> Client()");
-            _log.Info("Steam client is initializing");
-
-            if (!Steamworks.Load())
-            {
-                _log.Error("Failed to load Steamworks, throwing exception");
-                throw new SteamException("Steamworks failed to load");
-            }
-
-            _log.Debug("Creating steam client interface");
-            _steamClient = Steamworks.CreateInterface<ISteamClient012>();
-
-            if (_steamClient == null)
-            {
-                _log.Error("Steamclient null! Throwing exception");
-                throw new SteamException("SteamClient is null");
-            }
-
-            _log.Debug("Getting steam pipe...");
-            GetSteamPipe();
-            _log.Debug("Getting steam user...");
-            GetSteamUser();
-
-            _log.Debug("Getting steam user interface...");
-            _steamUser = _steamClient.GetISteamUser<ISteamUser016>(_user, _pipe);
-
-            if (_steamUser == null)
-            {
-                _log.Error("Steam user interface is null! Throwing exception");
-                throw new SteamException("SteamUser is null!");
-            }
-
-            _steamUtils = _steamClient.GetISteamUtils<ISteamUtils005>(_pipe);
-
-            _log.Debug("Getting client engine");
-            _clientEngine = Steamworks.CreateInterface<IClientEngine>();
-
-            if (_clientEngine == null)
-            {
-                _log.Error("Client engine is null! Throwing exception");
-                throw new SteamException("ClientEngine is null");
-            }
-
-            _log.Debug("Getting steam friends (002) interface");
-            _steamFriends002 = _steamClient.GetISteamFriends<ISteamFriends002>(_user, _pipe);
-
-            if (_steamFriends002 == null)
-            {
-                _log.Error("Steam friends (002) interface is null! Throwing exception");
-                throw new SteamException("SteamFriends (002) is null");
-            }
-
-            _log.Debug("Getting steam friends (013) interface");
-            _steamFriends013 = _steamClient.GetISteamFriends<ISteamFriends013>(_user, _pipe);
-
-            if (_steamFriends013 == null)
-            {
-                _log.Error("Steam friends (013) interface is null! Throwing exception");
-                throw new SteamException("SteamFriends (013) is null");
-            }
-
-            _log.Debug("Getting client friends interface...");
-            _clientFriends = _clientEngine.GetIClientFriends<IClientFriends>(_user, _pipe);
-
-            if (_clientFriends == null)
-            {
-                _log.Error("Client friends interface is null! Throwing exception");
-                throw new SteamException("ClientFriends is null");
-            }
-
-            _log.Debug("Creating SteamFriends wrapper");
-            _steamFriends = new SteamFriends(_steamFriends002, _steamFriends013, _clientFriends, _steamUtils);
-
             _log.Debug("Creating friends manager");
-            _friendsManager = new FriendsManager(_steamFriends, _steamUtils, this);
+            _friendsManager = new FriendsManager(_steamHelper, _steamUtils, this);
             
             // Set up callbacks
             _log.Debug("Setting up callbacks");
@@ -158,34 +69,6 @@ namespace Sharparam.SteamLib
             _log.Debug("<< Client())");
         }
 
-        private void GetSteamPipe()
-        {
-            _log.Debug(">> GetSteamPipe()");
-            if (_pipe != 0)
-                _steamClient.BReleaseSteamPipe(_pipe);
-            _pipe = _steamClient.CreateSteamPipe();
-            if (_pipe == 0)
-            {
-                _log.Error("Failed to get steam pipe, throwing exception");
-                throw new SteamException("Unable to create steam pipe (_pipe == 0)!");
-            }
-            _log.Debug("<< GetSteamPipe()");
-        }
-
-        private void GetSteamUser()
-        {
-            _log.Debug(">> GetSteamUser()");
-            if (_user != 0)
-                _steamClient.ReleaseUser(_pipe, _user);
-            _user = _steamClient.ConnectToGlobalUser(_pipe);
-            if (_user == 0)
-            {
-                _log.Error("Failed to get steam user, throwing exception");
-                throw new SteamException("Unable to connect to global user (_user == 0)!");
-            }
-            _log.Debug("<< GetSteamUser()");
-        }
-
         private void OnChatMessageReceived(ChatMessage message)
         {
             _log.Debug(">> OnChatMessageReceived([message])");
@@ -196,33 +79,11 @@ namespace Sharparam.SteamLib
             _log.Debug("<< OnChatMessageReceived()");
         }
 
-        public bool IsMe(CSteamID id)
-        {
-            _log.DebugFormat(">< IsMe({0})", id.Render());
-            return id == Me;
-        }
-
-        public string GetMyName()
-        {
-            _log.Debug(">< GetMyName()");
-            return _steamFriends.GetMyName();
-        }
-
-        public EPersonaState GetMyState()
-        {
-            return _steamFriends.GetMyState();
-        }
-
-        public void SetMyState(EPersonaState state)
-        {
-            _steamFriends.SetMyState(state);
-        }
-
         private void HandleFriendChatMessage(FriendChatMsg_t callback)
         {
             _log.Debug(">> HandleFriendChatMessage([callback])");
             
-            var message = _steamFriends.GetChatMessage(callback); // Construct the message class
+            var message = _steamHelper.GetChatMessage(callback); // Construct the message class
             if (message.Type != EChatEntryType.k_EChatEntryTypeChatMsg && message.Type != EChatEntryType.k_EChatEntryTypeEmote)
             {
                 _log.Debug("Not a chat or emote message, aborting.");

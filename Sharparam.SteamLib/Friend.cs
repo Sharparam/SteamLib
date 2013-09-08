@@ -36,23 +36,23 @@ namespace Sharparam.SteamLib
 
         private readonly log4net.ILog _log;
 
-        private readonly SteamFriends _steamFriends;
-        private readonly CSteamID _steamId;
+        private readonly SteamHelper _steamHelper;
+        private readonly CSteamID _id;
         private readonly List<ChatMessage> _chatHistory;
 
         public ReadOnlyCollection<ChatMessage> ChatHistory;
 
-        public CSteamID SteamID { get { return _steamId; } }
+        public CSteamID Id { get { return _id; } }
         public Bitmap Avatar { get; internal set; }
 
         public bool Online { get { return GetState() != EPersonaState.k_EPersonaStateOffline; } }
 
-        internal Friend(SteamFriends steamFriends, CSteamID id, List<ChatMessage> oldChatHistory = null)
+        internal Friend(SteamHelper steamHelper, CSteamID id, List<ChatMessage> oldChatHistory = null)
         {
             _log = LogManager.GetLogger(this);
             //_log.DebugFormat(">> Friend([clientFriends], {0}, {1})", id.Render(), oldChatHistory == null ? "null" : "[oldChatHistory]");
-            _steamFriends = steamFriends;
-            _steamId = id;
+            _steamHelper = steamHelper;
+            _id = id;
             _chatHistory = oldChatHistory ?? new List<ChatMessage>();
             ChatHistory = new ReadOnlyCollection<ChatMessage>(_chatHistory);
             //_log.Debug("<< Friend()");
@@ -78,7 +78,7 @@ namespace Sharparam.SteamLib
         public string GetName()
         {
             //_log.Debug(">< GetName()");
-            return _steamFriends.GetFriendName(_steamId);
+            return _steamHelper.GetFriendName(_id);
         }
 
         public string GetNickname()
@@ -87,7 +87,7 @@ namespace Sharparam.SteamLib
             string nick;
             try
             {
-                nick = _steamFriends.GetFriendNickname(_steamId);
+                nick = _steamHelper.GetFriendNickname(_id);
             }
             catch (ArgumentNullException) // No nickname set for this friend
             {
@@ -100,13 +100,13 @@ namespace Sharparam.SteamLib
         public EPersonaState GetState()
         {
             //_log.Debug(">< GetState()");
-            return _steamFriends.GetFriendState(_steamId);
+            return _steamHelper.GetFriendState(_id);
         }
 
         public string GetStateText()
         {
             //_log.Debug(">< GetStateText()");
-            return _steamFriends.GetFriendStateText(_steamId);
+            return _steamHelper.GetFriendStateText(_id);
         }
 
         public void SendType(string message, EChatEntryType type)
@@ -114,7 +114,7 @@ namespace Sharparam.SteamLib
             _log.DebugFormat(">> SendType([message], {0})", type);
             if (type == EChatEntryType.k_EChatEntryTypeEmote)
                 _log.Warn("Steam no longer supports sending emotes to chat");
-            _steamFriends.SendMessage(_steamId, type, message);
+            _steamHelper.SendMessage(_id, type, message);
             _log.Debug("<< SendType()");
         }
 

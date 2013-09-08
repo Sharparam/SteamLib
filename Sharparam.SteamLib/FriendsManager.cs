@@ -37,7 +37,7 @@ namespace Sharparam.SteamLib
 
         private readonly ISteamUtils005 _steamUtils;
 
-        private readonly SteamFriends _steamFriends;
+        private readonly SteamHelper _steamHelper;
 
         private Friend[] _friends;
 
@@ -48,12 +48,12 @@ namespace Sharparam.SteamLib
 
         public ReadOnlyCollection<Friend> Friends;
 
-        internal FriendsManager(SteamFriends steamFriends, ISteamUtils005 steamUtils, Client client)
+        internal FriendsManager(SteamHelper steamHelper, ISteamUtils005 steamUtils, Client client)
         {
             _log = LogManager.GetLogger(this);
             _log.Debug(">> FriendsManager([clientFriends])");
             _log.Info("FriendsManager is initializing");
-            _steamFriends = steamFriends;
+            _steamHelper = steamHelper;
             _steamUtils = steamUtils;
             UpdateFriends();
             client.ChatMessageReceived += HandleChatMessage;
@@ -82,7 +82,7 @@ namespace Sharparam.SteamLib
             }
 
             var oldFriends = _friends == null ? null : (Friend[]) _friends.Clone();
-            var newFriendCount = _steamFriends.GetFriendCount(EFriendFlags.k_EFriendFlagImmediate);
+            var newFriendCount = _steamHelper.GetFriendCount(EFriendFlags.k_EFriendFlagImmediate);
             if (_friends == null || newFriendCount != _friendCount)
             {
                 _friendCount = newFriendCount;
@@ -91,10 +91,10 @@ namespace Sharparam.SteamLib
             
             for (int i = 0; i < _friendCount; i++)
             {
-                var friend = _steamFriends.GetFriendByIndex(i, EFriendFlags.k_EFriendFlagImmediate);
-                Friend oldFriend = oldFriends == null ? null : oldFriends.FirstOrDefault(f => f.SteamID == friend);
-                _friends[i] = new Friend(_steamFriends, friend, oldFriend == null ? null :  oldFriend.ChatHistory.ToList());
-                var avatar = _steamFriends.GetLargeFriendAvatar(_friends[i].SteamID);
+                var friend = _steamHelper.GetFriendByIndex(i, EFriendFlags.k_EFriendFlagImmediate);
+                Friend oldFriend = oldFriends == null ? null : oldFriends.FirstOrDefault(f => f.Id == friend);
+                _friends[i] = new Friend(_steamHelper, friend, oldFriend == null ? null :  oldFriend.ChatHistory.ToList());
+                var avatar = _steamHelper.GetLargeFriendAvatar(_friends[i].Id);
                 if (avatar != null)
                     _friends[i].Avatar = avatar;
             }
@@ -108,13 +108,13 @@ namespace Sharparam.SteamLib
         public bool IsFriend(CSteamID id)
         {
             _log.DebugFormat(">< IsFriend({0})", id.Render());
-            return _friends.Any(f => f.SteamID == id);
+            return _friends.Any(f => f.Id == id);
         }
 
         public Friend GetFriendBySteamId(CSteamID id)
         {
             _log.DebugFormat(">< GetFriendBySteamId({0})", id.Render());
-            return _friends.FirstOrDefault(f => f.SteamID == id);
+            return _friends.FirstOrDefault(f => f.Id == id);
         }
 
         public Friend GetFriendByName(string name, bool caseSensitive = true)
@@ -133,7 +133,7 @@ namespace Sharparam.SteamLib
         {
             _log.Debug(">> HandleChatMessage([sender], [e])");
             var msg = e.Message;
-            var friend = _friends.FirstOrDefault(f => f.SteamID == msg.Sender || f.SteamID == msg.Receiver);
+            var friend = _friends.FirstOrDefault(f => f.Id == msg.Sender || f.Id == msg.Receiver);
             if (friend == null)
             {
                 _log.Debug("Friend is null (sender nor receiver is friend of current user), aborting");

@@ -49,11 +49,14 @@
     <Compile Include="Events\FriendsUpdated.cs" />
     <Compile Include="Extensions\ISteamFriends013Extensions.cs" />
     <Compile Include="Friend.cs" />
+    <Compile Include="FriendsList.cs" />
     <Compile Include="FriendsManager.cs" />
+    <Compile Include="LocalUser.cs" />
     <Compile Include="Logging\LogManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Steam.cs" />
     <Compile Include="SteamException.cs" />
-    <Compile Include="SteamFriends.cs" />
+    <Compile Include="SteamHelper.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
