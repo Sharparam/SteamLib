@@ -30,107 +30,135 @@ using Steam4NET;
 
 namespace Sharparam.SteamLib
 {
-    public class Friend
+    public class Friend : IEquatable<Friend>, IEquatable<CSteamID>, IEquatable<LocalUser>
     {
         public event ChatMessageReceivedEventHandler ChatMessageReceived;
 
         private readonly log4net.ILog _log;
 
-        private readonly SteamHelper _steamHelper;
-        private readonly CSteamID _id;
+        private readonly Steam _steam;
         private readonly List<ChatMessage> _chatHistory;
 
-        public ReadOnlyCollection<ChatMessage> ChatHistory;
+        public readonly CSteamID Id;
+        public readonly Bitmap Avatar;
+        public readonly ReadOnlyCollection<ChatMessage> ChatHistory;
 
-        public CSteamID Id { get { return _id; } }
-        public Bitmap Avatar { get; internal set; }
+        public EPersonaState State { get { return _steam.Helper.GetFriendState(Id); } }
 
-        public bool Online { get { return GetState() != EPersonaState.k_EPersonaStateOffline; } }
+        public string StateText { get { return _steam.Helper.GetFriendStateText(Id); } }
 
-        internal Friend(SteamHelper steamHelper, CSteamID id, List<ChatMessage> oldChatHistory = null)
+        public bool Online { get { return State != EPersonaState.k_EPersonaStateOffline; } }
+
+        public string Name { get { return _steam.Helper.GetFriendName(Id); } }
+
+        public string Nickname
+        {
+            get
+            {
+                string nick;
+                try
+                {
+                    nick = _steam.Helper.GetFriendNickname(Id);
+                }
+                catch (ArgumentNullException)
+                {
+                    nick = null;
+                }
+                return nick;
+            }
+        }
+
+        internal Friend(Steam steam, CSteamID id, Bitmap avatar = null, List<ChatMessage> oldChatHistory = null)
         {
             _log = LogManager.GetLogger(this);
-            //_log.DebugFormat(">> Friend([clientFriends], {0}, {1})", id.Render(), oldChatHistory == null ? "null" : "[oldChatHistory]");
-            _steamHelper = steamHelper;
-            _id = id;
+            
+            _steam = steam;
+            Id = id;
+            Avatar = avatar;
             _chatHistory = oldChatHistory ?? new List<ChatMessage>();
             ChatHistory = new ReadOnlyCollection<ChatMessage>(_chatHistory);
-            //_log.Debug("<< Friend()");
+        }
+
+        #region Equality Members
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+
+            if (ReferenceEquals(this, obj))
+                return true;
+
+            var id = obj as CSteamID;
+
+            if (id != null && Equals(id))
+                return true;
+
+            var user = obj as LocalUser;
+
+            if ((object) user != null && Equals(user))
+                return true;
+
+            return obj.GetType() == GetType() && Equals((Friend) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return Id == null ? 0 : Id.GetHashCode();
+        }
+
+        public bool Equals(Friend other)
+        {
+            return (object) other != null && Id == other.Id;
+        }
+
+        public bool Equals(CSteamID other)
+        {
+            return other != null && Id == other;
+        }
+
+        public bool Equals(LocalUser other)
+        {
+            return (object) other != null && Id == other.Id;
+        }
+
+        public static bool operator ==(Friend left, object right)
+        {
+            return (object) left != null && left.Equals(right);
+        }
+
+        public static bool operator !=(Friend left, object right)
+        {
+            return !(left == right);
+        }
+
+        
+
+        #endregion Equality Members
+
+        public static explicit operator CSteamID(Friend friend)
+        {
+            return friend.Id;
         }
 
         private void OnChatMessageReceived(ChatMessage message)
         {
-            _log.Debug(">> OnChatMessageReceived([message])");
             var func = ChatMessageReceived;
             if (func != null)
                 func(this, new ChatMessageEventArgs(message));
-            _log.Debug("<< OnChatMessageReceived()");
         }
 
         internal void AddChatMessage(ChatMessage message)
         {
-            _log.Debug(">> AddChatMessage([message])");
             _chatHistory.Add(message);
             OnChatMessageReceived(message);
-            _log.Debug("<< AddChatMessage()");
         }
 
-        public string GetName()
+        public void SendMessage(string message, EChatEntryType type = EChatEntryType.k_EChatEntryTypeChatMsg)
         {
-            //_log.Debug(">< GetName()");
-            return _steamHelper.GetFriendName(_id);
-        }
-
-        public string GetNickname()
-        {
-            _log.Debug(">> GetNickName()");
-            string nick;
-            try
-            {
-                nick = _steamHelper.GetFriendNickname(_id);
-            }
-            catch (ArgumentNullException) // No nickname set for this friend
-            {
-                nick = null;
-            }
-            _log.Debug("<< GetNickName()");
-            return nick;
-        }
-
-        public EPersonaState GetState()
-        {
-            //_log.Debug(">< GetState()");
-            return _steamHelper.GetFriendState(_id);
-        }
-
-        public string GetStateText()
-        {
-            //_log.Debug(">< GetStateText()");
-            return _steamHelper.GetFriendStateText(_id);
-        }
-
-        public void SendType(string message, EChatEntryType type)
-        {
-            _log.DebugFormat(">> SendType([message], {0})", type);
             if (type == EChatEntryType.k_EChatEntryTypeEmote)
                 _log.Warn("Steam no longer supports sending emotes to chat");
-            _steamHelper.SendMessage(_id, type, message);
-            _log.Debug("<< SendType()");
-        }
-
-        public void SendMessage(string message)
-        {
-            _log.Debug(">> SendMessage([message])");
-            SendType(message, EChatEntryType.k_EChatEntryTypeChatMsg);
-            _log.Debug("<< SendMessage()");
-        }
-
-        [Obsolete("Steam no longer supports sending emotes to chat")]
-        public void SendEmote(string message)
-        {
-            _log.Debug(">> SendEmote([message]) [OBSOLETE]");
-            SendType(message, EChatEntryType.k_EChatEntryTypeEmote);
-            _log.Debug("<< SendEmote()");
+            _steam.Helper.SendMessage(Id, type, message);
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Steam4NET;
@@ -46,8 +47,126 @@ namespace Sharparam.SteamLib
             for (var i = 0; i < numFriends; i++)
             {
                 var friendId = _steam.SteamFriends002.GetFriendByIndex(i, EFriendFlags.k_EFriendFlagImmediate);
-                
+                var avatar = _steam.Helper.GetLargeFriendAvatar(friendId);
+                List<ChatMessage> history = null;
+                var oldFriend = old.FirstOrDefault(f => f.Id == friendId);
+                if (oldFriend != null)
+                    history = oldFriend.ChatHistory.ToList();
+                var newFriend = new Friend(_steam, friendId, avatar, history);
+                _list.Add(newFriend);
             }
         }
+
+        public bool Contains(CSteamID id)
+        {
+            return this.Any(f => f.Id == id);
+        }
+
+        #region Get Methods
+
+        public Friend GetFriendById(CSteamID id)
+        {
+            return this.FirstOrDefault(f => f.Id == id);
+        }
+
+        public Friend GetFriendByName(string name, bool caseSensitive = true)
+        {
+            return
+                this.FirstOrDefault(
+                    f =>
+                    f.Name.Equals(name,
+                                  caseSensitive
+                                      ? StringComparison.InvariantCulture
+                                      : StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        public Friend GetFriendByPartialName(string search, bool caseSensitive = true)
+        {
+            return
+                this.FirstOrDefault(
+                    f =>
+                    CultureInfo.InvariantCulture.CompareInfo.IndexOf(f.Name, search,
+                                                                     caseSensitive
+                                                                         ? CompareOptions.None
+                                                                         : CompareOptions.IgnoreCase) >= 0);
+        }
+
+        public IEnumerable<Friend> GetFriendsByName(string name, bool caseSensitive = true)
+        {
+            return
+                this.Where(
+                    f =>
+                    f.Name.Equals(name,
+                                  caseSensitive
+                                      ? StringComparison.InvariantCulture
+                                      : StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        public IEnumerable<Friend> GetFriendsByPartialName(string search, bool caseSensitive = true)
+        {
+            return
+                this.Where(
+                    f =>
+                    CultureInfo.InvariantCulture.CompareInfo.IndexOf(f.Name, search,
+                                                                     caseSensitive
+                                                                         ? CompareOptions.None
+                                                                         : CompareOptions.IgnoreCase) >= 0);
+        }
+
+        public Friend GetFriendByNickname(string name, bool caseSensitive = true)
+        {
+            return
+                this.FirstOrDefault(
+                    f =>
+                    f.Name.Equals(name,
+                                  caseSensitive
+                                      ? StringComparison.InvariantCulture
+                                      : StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        public Friend GetFriendByPartialNickname(string search, bool caseSensitive = true)
+        {
+            return
+                this.FirstOrDefault(
+                    f =>
+                    CultureInfo.InvariantCulture.CompareInfo.IndexOf(f.Nickname, search,
+                                                                     caseSensitive
+                                                                         ? CompareOptions.None
+                                                                         : CompareOptions.IgnoreCase) >= 0);
+        }
+
+        public IEnumerable<Friend> GetFriendsByNickname(string name, bool caseSensitive = true)
+        {
+            return
+                this.Where(
+                    f =>
+                    f.Name.Equals(name,
+                                  caseSensitive
+                                      ? StringComparison.InvariantCulture
+                                      : StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        public IEnumerable<Friend> GetFriendsByPartialNickname(string search, bool caseSensitive = true)
+        {
+            return
+                this.Where(
+                    f =>
+                    CultureInfo.InvariantCulture.CompareInfo.IndexOf(f.Nickname, search,
+                                                                     caseSensitive
+                                                                         ? CompareOptions.None
+                                                                         : CompareOptions.IgnoreCase) >= 0);
+        }
+
+        public IEnumerable<Friend> GetFriendsByState(EPersonaState state)
+        {
+            return this.Where(f => f.State == state);
+        }
+
+        public IEnumerable<Friend> GetFriendsByStates(IEnumerable<EPersonaState> states)
+        {
+            return this.Where(f => states.Contains(f.State));
+        }
+
+        #endregion Get Methods
     }
 }

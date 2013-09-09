@@ -25,6 +25,13 @@ namespace Sharparam.SteamLib
             Id = _steam.SteamUser.GetSteamID();
         }
 
+        public override int GetHashCode()
+        {
+            return Id == null ? 0 : Id.GetHashCode();
+        }
+
+        #region Equality Members
+
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj))
@@ -40,15 +47,10 @@ namespace Sharparam.SteamLib
 
             var friend = obj as Friend;
 
-            if (friend != null && Equals(friend))
+            if ((object) friend != null && Equals(friend))
                 return true;
 
-            return obj.GetType() == GetType() && Equals((LocalUser) obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return Id == null ? 0 : Id.GetHashCode();
+            return obj.GetType() == GetType() && Equals((LocalUser)obj);
         }
 
         public bool Equals(LocalUser other)
@@ -63,58 +65,20 @@ namespace Sharparam.SteamLib
 
         public bool Equals(Friend other)
         {
-            return other != null && Id == other.Id;
+            return (object) other != null && Id == other.Id;
         }
 
-        public static bool operator ==(LocalUser left, LocalUser right)
+        public static bool operator ==(LocalUser left, object right)
         {
             return (object) left != null && left.Equals(right);
         }
 
-        public static bool operator !=(LocalUser left, LocalUser right)
+        public static bool operator !=(LocalUser left, object right)
         {
             return !(left == right);
         }
 
-        public static bool operator ==(LocalUser left, CSteamID right)
-        {
-            return (object) left != null && left.Equals(right);
-        }
-
-        public static bool operator !=(LocalUser left, CSteamID right)
-        {
-            return !(left == right);
-        }
-
-        public static bool operator ==(CSteamID left, LocalUser right)
-        {
-            return right != null && right.Equals(left);
-        }
-
-        public static bool operator !=(CSteamID left, LocalUser right)
-        {
-            return !(left == right);
-        }
-
-        public static bool operator ==(LocalUser left, Friend right)
-        {
-            return (object) left != null && left.Equals(right);
-        }
-
-        public static bool operator !=(LocalUser left, Friend right)
-        {
-            return !(left == right);
-        }
-
-        public static bool operator ==(Friend left, LocalUser right)
-        {
-            return right != null && right.Equals(left);
-        }
-
-        public static bool operator !=(Friend left, LocalUser right)
-        {
-            return !(left == right);
-        }
+        #endregion Equality Members
 
         public static explicit operator CSteamID(LocalUser user)
         {
