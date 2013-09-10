@@ -23,6 +23,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Drawing;
 using Sharparam.SteamLib.Events;
 using Sharparam.SteamLib.Logging;
@@ -30,25 +31,26 @@ using Steam4NET;
 
 namespace Sharparam.SteamLib
 {
-    public class Friend : IEquatable<Friend>, IEquatable<CSteamID>, IEquatable<LocalUser>
+    public sealed class Friend : IEquatable<Friend>, IEquatable<CSteamID>, IEquatable<LocalUser>, INotifyPropertyChanged
     {
-        public event ChatMessageReceivedEventHandler ChatMessageReceived;
+        public event PropertyChangedEventHandler PropertyChanged;
+        public event EventHandler<MessageEventArgs> ChatMessageReceived;
 
         private readonly log4net.ILog _log;
 
         private readonly Steam _steam;
-        private readonly List<ChatMessage> _chatHistory;
+        private readonly List<Message> _chatHistory;
 
         public readonly CSteamID Id;
-        public readonly ReadOnlyCollection<ChatMessage> ChatHistory;
+        public readonly ReadOnlyCollection<Message> ChatHistory;
 
-        public EPersonaState State { get { return _steam.Helper.GetFriendState(Id); } }
+        public EPersonaState State { get { return _steam.SteamFriends002.GetFriendPersonaState(Id); } }
 
-        public string StateText { get { return _steam.Helper.GetFriendStateText(Id); } }
+        public string StateText { get { return Steam.StateToString(State); } }
 
         public bool Online { get { return State != EPersonaState.k_EPersonaStateOffline; } }
 
-        public string Name { get { return _steam.Helper.GetFriendName(Id); } }
+        public string Name { get { return _steam.SteamFriends002.GetFriendPersonaName(Id); } }
 
         public string Nickname
         {
@@ -57,7 +59,7 @@ namespace Sharparam.SteamLib
                 string nick;
                 try
                 {
-                    nick = _steam.Helper.GetFriendNickname(Id);
+                    nick = _steam.ClientFriends.GetPlayerNickname(Id);
                 }
                 catch (ArgumentNullException)
                 {
@@ -65,20 +67,26 @@ namespace Sharparam.SteamLib
                 }
                 return nick;
             }
+
+            set
+            {
+                _steam.ClientFriends.SetPlayerNickname(Id, value);
+                OnPropertyChanged("Nickname");
+            }
         }
 
-        public Bitmap SmallAvatar { get { return _steam.Helper.GetSmallFriendAvatar(Id); } }
-        public Bitmap MediumAvatar { get { return _steam.Helper.GetMediumFriendAvatar(Id); } }
-        public Bitmap LargeAvatar { get { return _steam.Helper.GetLargeFriendAvatar(Id); } }
+        public Bitmap SmallAvatar { get { return _steam.GetSmallAvatar(Id); } }
+        public Bitmap MediumAvatar { get { return _steam.GetMediumAvatar(Id); } }
+        public Bitmap LargeAvatar { get { return _steam.GetLargeAvatar(Id); } }
 
-        internal Friend(Steam steam, CSteamID id, List<ChatMessage> oldChatHistory = null)
+        internal Friend(Steam steam, CSteamID id, List<Message> oldChatHistory = null)
         {
             _log = LogManager.GetLogger(this);
             
             _steam = steam;
             Id = id;
-            _chatHistory = oldChatHistory ?? new List<ChatMessage>();
-            ChatHistory = new ReadOnlyCollection<ChatMessage>(_chatHistory);
+            _chatHistory = oldChatHistory ?? new List<Message>();
+            ChatHistory = new ReadOnlyCollection<Message>(_chatHistory);
         }
 
         #region Equality Members
@@ -138,19 +146,44 @@ namespace Sharparam.SteamLib
 
         #endregion Equality Members
 
+        private void OnPropertyChanged(string propertyName)
+        {
+            PropertyChangedEventHandler func = PropertyChanged;
+            if (func != null)
+                func(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         public static explicit operator CSteamID(Friend friend)
         {
             return friend.Id;
         }
 
-        private void OnChatMessageReceived(ChatMessage message)
+        private void OnChatMessageReceived(Message message)
         {
             var func = ChatMessageReceived;
             if (func != null)
-                func(this, new ChatMessageEventArgs(message));
+                func(this, new MessageEventArgs(message));
         }
 
-        internal void AddChatMessage(ChatMessage message)
+        internal void NotifyChanged()
+        {
+            NotifyNameChanged();
+            NotifyStateChanged();
+        }
+
+        internal void NotifyNameChanged()
+        {
+            OnPropertyChanged("Name");
+        }
+
+        internal void NotifyStateChanged()
+        {
+            OnPropertyChanged("State");
+            OnPropertyChanged("StateText");
+            OnPropertyChanged("Online");
+        }
+
+        internal void AddChatMessage(Message message)
         {
             _chatHistory.Add(message);
             OnChatMessageReceived(message);
@@ -160,7 +193,7 @@ namespace Sharparam.SteamLib
         {
             if (type == EChatEntryType.k_EChatEntryTypeEmote)
                 _log.Warn("Steam no longer supports sending emotes to chat");
-            _steam.Helper.SendMessage(Id, type, message);
+            _steam.SendMessage(Id, message, type);
         }
     }
 }

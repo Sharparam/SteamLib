@@ -20,23 +20,49 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using System.Text;
 using Steam4NET;
 
 namespace Sharparam.SteamLib
 {
-    public struct ChatMessage
+    public struct Message
     {
         public readonly CSteamID Sender;
         public readonly CSteamID Receiver;
         public readonly EChatEntryType Type;
-        public readonly string Message;
+        public readonly string Content;
 
-        internal ChatMessage(CSteamID sender, CSteamID receiver, EChatEntryType type, string message)
+        internal Message(CSteamID sender, CSteamID receiver, EChatEntryType type, string content)
         {
             Sender = sender;
             Receiver = receiver;
             Type = type;
-            Message = message;
+            Content = content;
+        }
+
+        public Message(Steam steam, CSteamID sender, CSteamID receiver, EChatEntryType type, int chatId)
+        {
+            var data = new byte[4096];
+            var length = steam.SteamFriends002.GetChatMessage(receiver, chatId, data, ref type);
+            var content = Encoding.UTF8.GetString(data, 0, length - 1);
+
+            Sender = sender;
+            Receiver = receiver;
+            Type = type;
+            Content = content;
+        }
+
+        public Message(Steam steam, CSteamID sender, CSteamID receiver, EChatEntryType type, uint chatId)
+            : this(steam, sender, receiver, type, (int) chatId)
+        {
+            
+        }
+
+        public Message(Steam steam, FriendChatMsg_t msg)
+            : this(steam, new CSteamID(msg.m_ulSenderID), new CSteamID(msg.m_ulFriendID),
+                   (EChatEntryType) msg.m_eChatEntryType, msg.m_iChatID)
+        {
+            
         }
     }
 }

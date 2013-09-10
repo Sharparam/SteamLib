@@ -50,6 +50,23 @@ namespace Sharparam.SteamLib
             
         }
 
+        internal void Add(CSteamID id)
+        {
+            if (GetFriendById(id) != null)
+                return;
+
+            var friend = new Friend(_steam, id);
+            _list.Add(friend);
+        }
+
+        internal void Remove(CSteamID id)
+        {
+            var friend = GetFriendById(id);
+
+            if (friend != null)
+                _list.Remove(friend);
+        }
+
         public void Update(bool force = false)
         {
             if (_updating && !force)
@@ -185,5 +202,30 @@ namespace Sharparam.SteamLib
         }
 
         #endregion Get Methods
+
+        #region Notify methods
+
+        internal void NotifyChanged(CSteamID id)
+        {
+            var friend = GetFriendById(id);
+            if (friend != null)
+                friend.NotifyChanged();
+        }
+
+        internal void NotifyNameChanged(CSteamID id)
+        {
+            var friend = GetFriendById(id);
+            if (friend != null)
+                friend.NotifyNameChanged();
+        }
+
+        internal void NotifyStateChanged(CSteamID id)
+        {
+            var friend = GetFriendById(id);
+            if (friend != null)
+                friend.NotifyStateChanged();
+        }
+
+        #endregion Notify methods
     }
 }

@@ -20,17 +20,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using System;
+
 namespace Sharparam.SteamLib.Events
 {
-    public class ChatMessageEventArgs
+    public class MessageEventArgs : EventArgs
     {
-        public readonly ChatMessage Message;
+        public readonly Message Message;
 
-        internal ChatMessageEventArgs(ChatMessage message)
+        internal MessageEventArgs(Message message)
         {
             Message = message;
         }
     }
-
-    public delegate void ChatMessageReceivedEventHandler(object sender, ChatMessageEventArgs e);
 }

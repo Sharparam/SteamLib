@@ -31,15 +31,19 @@ namespace Sharparam.SteamLib
 
         public readonly CSteamID Id;
 
-        public string Name { get { return _steam.Helper.GetMyName(); } }
-        
-        public EPersonaState State
+        public string Name
         {
-            get { return _steam.Helper.GetMyState(); }
-            set { _steam.Helper.SetMyState(value); }
+            get { return _steam.SteamFriends002.GetPersonaName(); }
+            set { _steam.SteamFriends002.SetPersonaName(value); }
         }
 
-        public string StateText { get { return _steam.Helper.GetMyStateText(); } }
+        public EPersonaState State
+        {
+            get { return _steam.SteamFriends002.GetPersonaState(); }
+            set { _steam.SteamFriends002.SetPersonaState(value); }
+        }
+
+        public string StateText { get { return Steam.StateToString(State); } }
 
         internal LocalUser(Steam steam)
         {
@@ -96,6 +100,16 @@ namespace Sharparam.SteamLib
         }
 
         public static bool operator !=(LocalUser left, object right)
+        {
+            return !(left == right);
+        }
+
+        public static bool operator ==(CSteamID left, LocalUser right)
+        {
+            return left != null && (object) right != null && right.Equals(left);
+        }
+
+        public static bool operator !=(CSteamID left, LocalUser right)
         {
             return !(left == right);
         }

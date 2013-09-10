@@ -21,14 +21,28 @@
  */
 
 using System;
-using Sharparam.SteamLib.Logging;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Text;
+using Sharparam.SteamLib.Events;
 using Steam4NET;
+using log4net;
+using LogManager = Sharparam.SteamLib.Logging.LogManager;
 
 namespace Sharparam.SteamLib
 {
     public class Steam : IDisposable
     {
-        private readonly log4net.ILog _log;
+        public event EventHandler<MessageEventArgs> Message;
+        public event EventHandler<MessageEventArgs> ChatMessage;
+
+        public event EventHandler<MessageEventArgs> MessageReceived;
+        public event EventHandler<MessageEventArgs> ChatMessageReceived;
+
+        public event EventHandler<MessageEventArgs> MessageSent;
+        public event EventHandler<MessageEventArgs> ChatMessageSent;
+
+        private readonly ILog _log;
 
         private readonly int _pipe;
         private readonly int _user;
@@ -41,11 +55,28 @@ namespace Sharparam.SteamLib
         internal readonly IClientEngine ClientEngine;
         internal readonly IClientFriends ClientFriends;
 
+        private static readonly Dictionary<EPersonaState, string> StateMapping = new Dictionary<EPersonaState, string>
+        {
+            {EPersonaState.k_EPersonaStateAway, "Away"},
+            {EPersonaState.k_EPersonaStateBusy, "Busy"},
+            {EPersonaState.k_EPersonaStateLookingToPlay, "Looking To Play"},
+            {EPersonaState.k_EPersonaStateLookingToTrade, "Looking To Trade"},
+            {EPersonaState.k_EPersonaStateOffline, "Offline"},
+            {EPersonaState.k_EPersonaStateOnline, "Online"},
+            {EPersonaState.k_EPersonaStateSnooze, "Snooze"}
+        };
+
         public bool IsDisposed { get; private set; }
 
         public readonly LocalUser LocalUser;
-        public readonly SteamHelper Helper;
         public readonly FriendsList Friends;
+
+        private Callback<PersonaStateChange_t> _personaStateChange;
+        private Callback<FriendProfileInfoResponse_t> _friendProfileInfoResponse;
+        private Callback<FriendAdded_t> _friendAdded;
+        private Callback<FriendChatMsg_t> _friendChatMessage;
+
+        #region Constructor
 
         public Steam()
         {
@@ -131,10 +162,22 @@ namespace Sharparam.SteamLib
                 throw new SteamException("Failed to obtain client friends");
             }
 
-            Helper = new SteamHelper(this);
+            // Set up callbacks
+            _personaStateChange = new Callback<PersonaStateChange_t>(HandlePersonaStateChange);
+            _friendProfileInfoResponse = new Callback<FriendProfileInfoResponse_t>(HandleFriendProfileInfoResponse);
+            _friendAdded = new Callback<FriendAdded_t>(HandleFriendAdded);
+            _friendChatMessage = new Callback<FriendChatMsg_t>(HandleFriendChatMessage);
+
             LocalUser = new LocalUser(this);
             Friends = new FriendsList(this);
+
+            // Spawn dispatch thread
+            CallbackDispatcher.SpawnDispatchThread(_pipe);
         }
+
+        #endregion Constructor
+
+        #region Finalizer / Dispose methods
 
         ~Steam()
         {
@@ -152,7 +195,196 @@ namespace Sharparam.SteamLib
             if (IsDisposed)
                 return;
 
+            if (_personaStateChange != null)
+            {
+                _personaStateChange.UnRegister();
+                _personaStateChange = null;
+            }
 
+            if (_friendProfileInfoResponse != null)
+            {
+                _friendProfileInfoResponse.UnRegister();
+                _friendProfileInfoResponse = null;
+            }
+
+            if (_friendAdded != null)
+            {
+                _friendAdded.UnRegister();
+                _friendAdded = null;
+            }
+
+            if (_friendChatMessage != null)
+            {
+                _friendChatMessage.UnRegister();
+                _friendChatMessage = null;
+            }
+
+            CallbackDispatcher.StopDispatchThread(_pipe);
+
+            IsDisposed = true;
         }
+
+        #endregion Finalizer / Dispose methods
+
+        #region Event Dispatchers
+
+        private void OnMessage(Message message)
+        {
+            OnMessage(new MessageEventArgs(message));
+        }
+
+        private void OnMessage(MessageEventArgs args)
+        {
+            var func = Message;
+            if (func != null)
+                func(this, args);
+        }
+
+        private void OnChatMessage(Message message)
+        {
+            OnChatMessage(new MessageEventArgs(message));
+        }
+
+        private void OnChatMessage(MessageEventArgs args)
+        {
+            var func = ChatMessage;
+            if (func != null)
+                func(this, args);
+        }
+
+        #endregion Event Dispatchers
+
+
+        #region Steam Event Handlers
+
+        private void HandlePersonaStateChange(PersonaStateChange_t param)
+        {
+            Friends.NotifyStateChanged(new CSteamID(param.m_ulSteamID));
+        }
+
+        private void HandleFriendProfileInfoResponse(FriendProfileInfoResponse_t param)
+        {
+            Friends.NotifyChanged(new CSteamID(param.m_steamIDFriend));
+        }
+
+        private void HandleFriendAdded(FriendAdded_t param)
+        {
+            Friends.Add(new CSteamID(param.m_ulSteamID));
+        }
+
+        private void HandleFriendChatMessage(FriendChatMsg_t param)
+        {
+            var message = new Message(this, param);
+            var type = message.Type;
+            var sent = message.Sender == LocalUser;
+
+            var msgFunc = sent ? MessageSent : MessageReceived;
+            var chatFunc = sent ? ChatMessageSent : ChatMessageReceived;
+
+            var args = new MessageEventArgs(message);
+
+            OnMessage(message);
+            if (msgFunc != null)
+                msgFunc(this, args);
+
+            switch (type)
+            {
+                case EChatEntryType.k_EChatEntryTypeChatMsg:
+                    OnChatMessage(message);
+                    if (chatFunc != null)
+                        chatFunc(this, args);
+                    break;
+            }
+        }
+
+        #endregion Steam Event Handlers
+
+        #region Steam Methods
+
+        public static string StateToString(EPersonaState state)
+        {
+            return StateMapping.ContainsKey(state) ? StateMapping[state] : "Unknown";
+        }
+
+        public void SendMessage(CSteamID receiver, string message, EChatEntryType type = EChatEntryType.k_EChatEntryTypeChatMsg)
+        {
+            if (type == EChatEntryType.k_EChatEntryTypeEmote)
+                _log.Warn("Steam no longer supports sending emotes to chat");
+            SteamFriends002.SendMsgToFriend(receiver, type, Encoding.UTF8.GetBytes(message));
+        }
+
+        #endregion Steam Methods
+
+        #region Avatar Methods
+
+        // All credit to kimoto on GitHub
+        // https://gist.github.com/986866/b2dc849940d4bdba858f3b305bf68afda641e21e
+
+        private Bitmap GetAvatarFromHandle(int handle)
+        {
+            uint width = 0;
+            uint height = 0;
+            if (!SteamUtils.GetImageSize(handle, ref width, ref height))
+                return null;
+
+            var size = 4 * width * height;
+            var buffer = new byte[size];
+            if (!SteamUtils.GetImageRGBA(handle, buffer, (int)size))
+                return null;
+
+            var bitmap = new Bitmap((int)width, (int)height);
+            for (var x = 0; x < width; x++)
+                for (var y = 0; y < height; y++)
+                {
+                    var index = (y * (int)width + x) * 4;
+                    int r = buffer[index + 0];
+                    int g = buffer[index + 1];
+                    int b = buffer[index + 2];
+                    int a = buffer[index + 3];
+                    var color = Color.FromArgb(a, r, g, b);
+                    bitmap.SetPixel(x, y, color);
+                }
+
+            return bitmap;
+        }
+
+        private Bitmap GetAvatar(CSteamID id, EAvatarSize size)
+        {
+            int handle;
+            switch (size)
+            {
+                case EAvatarSize.k_EAvatarSize32x32:
+                    handle = SteamFriends013.GetSmallFriendAvatar(id);
+                    break;
+                case EAvatarSize.k_EAvatarSize64x64:
+                    handle = SteamFriends013.GetMediumFriendAvatar(id);
+                    break;
+                case EAvatarSize.k_EAvatarSize184x184:
+                    handle = SteamFriends013.GetLargeFriendAvatar(id);
+                    break;
+                default:
+                    handle = SteamFriends013.GetLargeFriendAvatar(id);
+                    break;
+            }
+            var avatar = GetAvatarFromHandle(handle);
+            return avatar;
+        }
+
+        public Bitmap GetSmallAvatar(CSteamID id)
+        {
+            return GetAvatar(id, EAvatarSize.k_EAvatarSize32x32);
+        }
+
+        public Bitmap GetMediumAvatar(CSteamID id)
+        {
+            return GetAvatar(id, EAvatarSize.k_EAvatarSize64x64);
+        }
+
+        public Bitmap GetLargeAvatar(CSteamID id)
+        {
+            return GetAvatar(id, EAvatarSize.k_EAvatarSize184x184);
+        }
+
+        #endregion Avatar Methods
     }
 }
