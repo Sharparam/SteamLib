@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 using Steam4NET;
 
 namespace Sharparam.SteamLib
@@ -48,13 +46,7 @@ namespace Sharparam.SteamLib
             {
                 var friendId = _steam.SteamFriends002.GetFriendByIndex(i, EFriendFlags.k_EFriendFlagImmediate);
                 var oldFriend = old.FirstOrDefault(f => f.Id == friendId);
-                if (oldFriend != null)
-                    _list.Add(oldFriend);
-                else
-                {
-                    var avatar = _steam.Helper.GetLargeFriendAvatar(friendId);
-                    _list.Add(new Friend(_steam, friendId, avatar));
-                }
+                _list.Add(oldFriend ?? new Friend(_steam, friendId));
             }
         }
 

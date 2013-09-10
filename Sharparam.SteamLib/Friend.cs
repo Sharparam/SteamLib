@@ -40,7 +40,6 @@ namespace Sharparam.SteamLib
         private readonly List<ChatMessage> _chatHistory;
 
         public readonly CSteamID Id;
-        public readonly Bitmap Avatar;
         public readonly ReadOnlyCollection<ChatMessage> ChatHistory;
 
         public EPersonaState State { get { return _steam.Helper.GetFriendState(Id); } }
@@ -68,13 +67,16 @@ namespace Sharparam.SteamLib
             }
         }
 
-        internal Friend(Steam steam, CSteamID id, Bitmap avatar = null, List<ChatMessage> oldChatHistory = null)
+        public Bitmap SmallAvatar { get { return _steam.Helper.GetSmallFriendAvatar(Id); } }
+        public Bitmap MediumAvatar { get { return _steam.Helper.GetMediumFriendAvatar(Id); } }
+        public Bitmap LargeAvatar { get { return _steam.Helper.GetLargeFriendAvatar(Id); } }
+
+        internal Friend(Steam steam, CSteamID id, List<ChatMessage> oldChatHistory = null)
         {
             _log = LogManager.GetLogger(this);
             
             _steam = steam;
             Id = id;
-            Avatar = avatar;
             _chatHistory = oldChatHistory ?? new List<ChatMessage>();
             ChatHistory = new ReadOnlyCollection<ChatMessage>(_chatHistory);
         }
