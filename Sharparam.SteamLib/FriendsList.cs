@@ -47,13 +47,14 @@ namespace Sharparam.SteamLib
             for (var i = 0; i < numFriends; i++)
             {
                 var friendId = _steam.SteamFriends002.GetFriendByIndex(i, EFriendFlags.k_EFriendFlagImmediate);
-                var avatar = _steam.Helper.GetLargeFriendAvatar(friendId);
-                List<ChatMessage> history = null;
                 var oldFriend = old.FirstOrDefault(f => f.Id == friendId);
                 if (oldFriend != null)
-                    history = oldFriend.ChatHistory.ToList();
-                var newFriend = new Friend(_steam, friendId, avatar, history);
-                _list.Add(newFriend);
+                    _list.Add(oldFriend);
+                else
+                {
+                    var avatar = _steam.Helper.GetLargeFriendAvatar(friendId);
+                    _list.Add(new Friend(_steam, friendId, avatar));
+                }
             }
         }
 
