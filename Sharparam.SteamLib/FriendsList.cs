@@ -48,6 +48,8 @@ namespace Sharparam.SteamLib
                 var oldFriend = old.FirstOrDefault(f => f.Id == friendId);
                 _list.Add(oldFriend ?? new Friend(_steam, friendId));
             }
+
+            _updating = false;
         }
 
         public bool Contains(CSteamID id)
