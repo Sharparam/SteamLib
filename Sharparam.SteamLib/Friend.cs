@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Drawing;
+using System.Linq;
 using Sharparam.SteamLib.Events;
 using Sharparam.SteamLib.Logging;
 using Steam4NET;
@@ -33,16 +34,29 @@ namespace Sharparam.SteamLib
 {
     public sealed class Friend : IEquatable<Friend>, IEquatable<CSteamID>, IEquatable<LocalUser>, INotifyPropertyChanged
     {
+        private const int MessageHistoryLimit = 256;
+
         public event PropertyChangedEventHandler PropertyChanged;
+
+        public event EventHandler<MessageEventArgs> Message;
+        public event EventHandler<MessageEventArgs> ChatMessage;
+        public event EventHandler<MessageEventArgs> TypingMessage;
+
+        public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<MessageEventArgs> ChatMessageReceived;
+        public event EventHandler<MessageEventArgs> TypingMessageReceived;
+
+        public event EventHandler<MessageEventArgs> MessageSent;
+        public event EventHandler<MessageEventArgs> ChatMessageSent;
+        public event EventHandler<MessageEventArgs> TypingMessageSent;
 
         private readonly log4net.ILog _log;
 
         private readonly Steam _steam;
-        private readonly List<Message> _chatHistory;
+        private readonly List<Message> _messageHistory;
 
         public readonly CSteamID Id;
-        public readonly ReadOnlyCollection<Message> ChatHistory;
+        public readonly ReadOnlyCollection<Message> MessageHistory;
 
         public EPersonaState State { get { return _steam.SteamFriends002.GetFriendPersonaState(Id); } }
 
@@ -61,7 +75,7 @@ namespace Sharparam.SteamLib
                 {
                     nick = _steam.ClientFriends.GetPlayerNickname(Id);
                 }
-                catch (ArgumentNullException)
+                catch (ArgumentNullException) // Nick has not been set
                 {
                     nick = null;
                 }
@@ -79,14 +93,19 @@ namespace Sharparam.SteamLib
         public Bitmap MediumAvatar { get { return _steam.GetMediumAvatar(Id); } }
         public Bitmap LargeAvatar { get { return _steam.GetLargeAvatar(Id); } }
 
+        public IEnumerable<Message> ChatMessageHistory
+        {
+            get { return MessageHistory.Where(m => m.Type == EChatEntryType.k_EChatEntryTypeChatMsg); }
+        }
+
         internal Friend(Steam steam, CSteamID id, List<Message> oldChatHistory = null)
         {
             _log = LogManager.GetLogger(this);
             
             _steam = steam;
             Id = id;
-            _chatHistory = oldChatHistory ?? new List<Message>();
-            ChatHistory = new ReadOnlyCollection<Message>(_chatHistory);
+            _messageHistory = oldChatHistory ?? new List<Message>();
+            MessageHistory = new ReadOnlyCollection<Message>(_messageHistory);
         }
 
         #region Equality Members
@@ -146,29 +165,92 @@ namespace Sharparam.SteamLib
 
         #endregion Equality Members
 
-        private void OnPropertyChanged(string propertyName)
-        {
-            PropertyChangedEventHandler func = PropertyChanged;
-            if (func != null)
-                func(this, new PropertyChangedEventArgs(propertyName));
-        }
-
         public static explicit operator CSteamID(Friend friend)
         {
             return friend.Id;
         }
 
-        private void OnChatMessageReceived(Message message)
+        #region Event Dispatchers
+
+        private void OnPropertyChanged(string propertyName)
+        {
+            var func = PropertyChanged;
+            if (func != null)
+                func(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        internal void OnMessage(MessageEventArgs args)
+        {
+            var func = Message;
+            if (func != null)
+                func(this, args);
+        }
+
+        internal void OnChatMessage(MessageEventArgs args)
+        {
+            var func = ChatMessage;
+            if (func != null)
+                func(this, args);
+        }
+        
+        internal void OnTypingMessage(MessageEventArgs args)
+        {
+            var func = TypingMessage;
+            if (func != null)
+                func(this, args);
+        }
+
+        internal void OnMessageReceived(MessageEventArgs args)
+        {
+            var func = MessageReceived;
+            if (func != null)
+                func(this, args);
+        }
+
+        internal void OnChatMessageReceived(MessageEventArgs args)
         {
             var func = ChatMessageReceived;
             if (func != null)
-                func(this, new MessageEventArgs(message));
+                func(this, args);
         }
+
+        internal void OnTypingMessageReceived(MessageEventArgs args)
+        {
+            var func = TypingMessageReceived;
+            if (func != null)
+                func(this, args);
+        }
+
+        internal void OnMessageSent(MessageEventArgs args)
+        {
+            var func = MessageSent;
+            if (func != null)
+                func(this, args);
+        }
+
+        internal void OnChatMessageSent(MessageEventArgs args)
+        {
+            var func = ChatMessageSent;
+            if (func != null)
+                func(this, args);
+        }
+
+        internal void OnTypingMessageSent(MessageEventArgs args)
+        {
+            var func = TypingMessageSent;
+            if (func != null)
+                func(this, args);
+        }
+
+        #endregion Event Dispatchers
+
+        #region Notify Methods
 
         internal void NotifyChanged()
         {
             NotifyNameChanged();
             NotifyStateChanged();
+            NotifyAvatarChanged();
         }
 
         internal void NotifyNameChanged()
@@ -183,10 +265,21 @@ namespace Sharparam.SteamLib
             OnPropertyChanged("Online");
         }
 
-        internal void AddChatMessage(Message message)
+        internal void NotifyAvatarChanged()
         {
-            _chatHistory.Add(message);
-            OnChatMessageReceived(message);
+            OnPropertyChanged("SmallAvatar");
+            OnPropertyChanged("MediumAvatar");
+            OnPropertyChanged("LargeAvatar");
+        }
+
+        #endregion Notify Methods
+
+        internal void AddMessage(Message message)
+        {
+            if (_messageHistory.Count >= MessageHistoryLimit)
+                _messageHistory.RemoveAt(0);
+
+            _messageHistory.Add(message);
         }
 
         public void SendMessage(string message, EChatEntryType type = EChatEntryType.k_EChatEntryTypeChatMsg)

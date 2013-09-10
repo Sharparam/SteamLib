@@ -25,9 +25,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 using Sharparam.SteamLib.Events;
+using Sharparam.SteamLib.Logging;
 using Steam4NET;
-using log4net;
-using LogManager = Sharparam.SteamLib.Logging.LogManager;
 
 namespace Sharparam.SteamLib
 {
@@ -35,14 +34,17 @@ namespace Sharparam.SteamLib
     {
         public event EventHandler<MessageEventArgs> Message;
         public event EventHandler<MessageEventArgs> ChatMessage;
+        public event EventHandler<MessageEventArgs> TypingMessage;
 
         public event EventHandler<MessageEventArgs> MessageReceived;
         public event EventHandler<MessageEventArgs> ChatMessageReceived;
+        public event EventHandler<MessageEventArgs> TypingMessageReceived;
 
         public event EventHandler<MessageEventArgs> MessageSent;
         public event EventHandler<MessageEventArgs> ChatMessageSent;
+        public event EventHandler<MessageEventArgs> TypingMessageSent;
 
-        private readonly ILog _log;
+        private readonly log4net.ILog _log;
 
         private readonly int _pipe;
         private readonly int _user;
@@ -73,8 +75,8 @@ namespace Sharparam.SteamLib
 
         private Callback<PersonaStateChange_t> _personaStateChange;
         private Callback<FriendProfileInfoResponse_t> _friendProfileInfoResponse;
-        private Callback<FriendAdded_t> _friendAdded;
-        private Callback<FriendChatMsg_t> _friendChatMessage;
+        private Callback<FriendAdded_t> _friendAdded; 
+        private Callback<FriendChatMsg_t> _friendChatMessage; 
 
         #region Constructor
 
@@ -252,8 +254,19 @@ namespace Sharparam.SteamLib
                 func(this, args);
         }
 
-        #endregion Event Dispatchers
+        private void OnTypingMessage(Message message)
+        {
+            OnTypingMessage(new MessageEventArgs(message));
+        }
 
+        private void OnTypingMessage(MessageEventArgs args)
+        {
+            var func = TypingMessage;
+            if (func != null)
+                func(this, args);
+        }
+
+        #endregion Event Dispatchers
 
         #region Steam Event Handlers
 
@@ -279,20 +292,41 @@ namespace Sharparam.SteamLib
             var sent = message.Sender == LocalUser;
 
             var msgFunc = sent ? MessageSent : MessageReceived;
-            var chatFunc = sent ? ChatMessageSent : ChatMessageReceived;
 
             var args = new MessageEventArgs(message);
 
-            OnMessage(message);
+            OnMessage(args);
             if (msgFunc != null)
                 msgFunc(this, args);
+            Friends.HandleMessageEvent(sent ? message.Receiver : message.Sender, args);
+            if (sent)
+                Friends.HandleMessageSentEvent(args);
+            else
+                Friends.HandleMessageReceivedEvent(args);
 
             switch (type)
             {
                 case EChatEntryType.k_EChatEntryTypeChatMsg:
-                    OnChatMessage(message);
+                    OnChatMessage(args);
+                    var chatFunc = sent ? ChatMessageSent : ChatMessageReceived;
                     if (chatFunc != null)
                         chatFunc(this, args);
+                    Friends.HandleChatMessageEvent(sent ? message.Receiver : message.Sender, args);
+                    if (sent)
+                        Friends.HandleChatMessageSentEvent(args);
+                    else
+                        Friends.HandleChatMessageReceivedEvent(args);
+                    break;
+                case EChatEntryType.k_EChatEntryTypeTyping:
+                    OnTypingMessage(args);
+                    var typingFunc = sent ? TypingMessageSent : TypingMessageReceived;
+                    if (typingFunc != null)
+                        typingFunc(this, args);
+                    Friends.HandleTypingMessageEvent(sent ? message.Receiver : message.Sender, args);
+                    if (sent)
+                        Friends.HandleTypingMessageSentEvent(args);
+                    else
+                        Friends.HandleTypingMessageReceivedEvent(args);
                     break;
             }
         }

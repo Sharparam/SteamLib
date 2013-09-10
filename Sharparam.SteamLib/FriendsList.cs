@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using Sharparam.SteamLib.Events;
 using Steam4NET;
 
 namespace Sharparam.SteamLib
@@ -57,14 +58,6 @@ namespace Sharparam.SteamLib
 
             var friend = new Friend(_steam, id);
             _list.Add(friend);
-        }
-
-        internal void Remove(CSteamID id)
-        {
-            var friend = GetFriendById(id);
-
-            if (friend != null)
-                _list.Remove(friend);
         }
 
         public void Update(bool force = false)
@@ -227,5 +220,74 @@ namespace Sharparam.SteamLib
         }
 
         #endregion Notify methods
+
+        #region Internal Handler Methods
+
+        internal void HandleMessageEvent(CSteamID id, MessageEventArgs args)
+        {
+            var friend = GetFriendById(id);
+            if (friend == null)
+                return;
+            friend.OnMessage(args);
+            friend.AddMessage(args.Message);
+        }
+
+        internal void HandleChatMessageEvent(CSteamID id, MessageEventArgs args)
+        {
+            var friend = GetFriendById(id);
+            if (friend != null)
+                friend.OnChatMessage(args);
+        }
+
+        internal void HandleTypingMessageEvent(CSteamID id, MessageEventArgs args)
+        {
+            var friend = GetFriendById(id);
+            if (friend != null)
+                friend.OnTypingMessage(args);
+        }
+
+        internal void HandleMessageReceivedEvent(MessageEventArgs args)
+        {
+            var friend = GetFriendById(args.Message.Sender);
+            if (friend != null)
+                friend.OnMessageReceived(args);
+        }
+
+        internal void HandleChatMessageReceivedEvent(MessageEventArgs args)
+        {
+            var friend = GetFriendById(args.Message.Sender);
+            if (friend != null)
+                friend.OnChatMessageReceived(args);
+        }
+
+        internal void HandleTypingMessageReceivedEvent(MessageEventArgs args)
+        {
+            var friend = GetFriendById(args.Message.Sender);
+            if (friend != null)
+                friend.OnTypingMessageReceived(args);
+        }
+
+        internal void HandleMessageSentEvent(MessageEventArgs args)
+        {
+            var friend = GetFriendById(args.Message.Receiver);
+            if (friend != null)
+                friend.OnMessageSent(args);
+        }
+
+        internal void HandleChatMessageSentEvent(MessageEventArgs args)
+        {
+            var friend = GetFriendById(args.Message.Receiver);
+            if (friend != null)
+                friend.OnChatMessageSent(args);
+        }
+
+        internal void HandleTypingMessageSentEvent(MessageEventArgs args)
+        {
+            var friend = GetFriendById(args.Message.Receiver);
+            if (friend != null)
+                friend.OnTypingMessageSent(args);
+        }
+
+        #endregion Internal Handler Methods
     }
 }
