@@ -194,6 +194,11 @@ namespace Sharparam.SteamLib
             return this.Where(f => states.Contains(f.State));
         }
 
+        public IEnumerable<Friend> GetOnlineFriends()
+        {
+            return this.Where(f => f.Online);
+        }
+
         #endregion Get Methods
 
         #region Notify methods
