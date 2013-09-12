@@ -153,15 +153,13 @@ namespace Sharparam.SteamLib
 
         public static bool operator ==(Friend left, object right)
         {
-            return (object) left != null && left.Equals(right);
+            return ((object) left != null && left.Equals(right)) || ((object) left == null && right == null);
         }
 
         public static bool operator !=(Friend left, object right)
         {
             return !(left == right);
         }
-
-        
 
         #endregion Equality Members
 
