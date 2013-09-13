@@ -44,7 +44,7 @@ namespace Sharparam.SteamLib
         {
             var data = new byte[4096];
             var length = steam.SteamFriends002.GetChatMessage(receiver, chatId, data, ref type);
-            var content = Encoding.UTF8.GetString(data, 0, length - 1);
+            var content = Encoding.UTF8.GetString(data, 0, length);
 
             Sender = sender;
             Receiver = receiver;
