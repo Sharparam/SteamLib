@@ -53,10 +53,10 @@ namespace Sharparam.SteamLib
         private readonly log4net.ILog _log;
 
         private readonly Steam _steam;
-        private readonly List<Message> _messageHistory;
+        private readonly ObservableCollection<Message> _messageHistory;
 
         public readonly CSteamID Id;
-        public readonly ReadOnlyCollection<Message> MessageHistory;
+        public readonly ReadOnlyObservableCollection<Message> MessageHistory;
 
         public EPersonaState State { get { return _steam.SteamFriends002.GetFriendPersonaState(Id); } }
 
@@ -98,14 +98,14 @@ namespace Sharparam.SteamLib
             get { return MessageHistory.Where(m => m.Type == EChatEntryType.k_EChatEntryTypeChatMsg); }
         }
 
-        internal Friend(Steam steam, CSteamID id, List<Message> oldChatHistory = null)
+        internal Friend(Steam steam, CSteamID id, ObservableCollection<Message> oldChatHistory = null)
         {
             _log = LogManager.GetLogger(this);
             
             _steam = steam;
             Id = id;
-            _messageHistory = oldChatHistory ?? new List<Message>();
-            MessageHistory = new ReadOnlyCollection<Message>(_messageHistory);
+            _messageHistory = oldChatHistory ?? new ObservableCollection<Message>();
+            MessageHistory = new ReadOnlyObservableCollection<Message>(_messageHistory);
         }
 
         #region Equality Members
@@ -153,15 +153,13 @@ namespace Sharparam.SteamLib
 
         public static bool operator ==(Friend left, object right)
         {
-            return (object) left != null && left.Equals(right);
+            return ((object) left != null && left.Equals(right)) || ((object) left == null && right == null);
         }
 
         public static bool operator !=(Friend left, object right)
         {
             return !(left == right);
         }
-
-        
 
         #endregion Equality Members
 

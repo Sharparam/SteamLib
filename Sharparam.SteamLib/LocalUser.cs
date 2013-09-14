@@ -96,7 +96,7 @@ namespace Sharparam.SteamLib
 
         public static bool operator ==(LocalUser left, object right)
         {
-            return (object) left != null && left.Equals(right);
+            return ((object) left != null && left.Equals(right)) || ((object) left == null && right == null);
         }
 
         public static bool operator !=(LocalUser left, object right)
@@ -106,7 +106,7 @@ namespace Sharparam.SteamLib
 
         public static bool operator ==(CSteamID left, LocalUser right)
         {
-            return left != null && (object) right != null && right.Equals(left);
+            return (left != null && (object) right != null && right.Equals(left)) || (left == null && (object) right == null);
         }
 
         public static bool operator !=(CSteamID left, LocalUser right)
