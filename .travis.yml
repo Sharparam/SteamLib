@@ -1,7 +1,9 @@
 language: c
 
 notifications:
-  irc: "irc.kottnet.net#F16Gaming"
+  irc:
+    - "irc.kottnet.net#F16Gaming"
+    - "chat.freenode.net#SharpBlade"
 
 install:
   - sudo apt-get install mono-devel mono-gmcs
