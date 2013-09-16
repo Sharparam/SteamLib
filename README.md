@@ -1,6 +1,6 @@
 SteamLib
 ========
 
-[![Build Status](https://travis-ci.org/Sharparam/SteamLib.png?branch=master)](https://travis-ci.org/Sharparam/SteamLib)
+[![Build Status](http://ci.sharparam.com/buildStatus/icon?job=SteamLib)](http://ci.sharparam.com/job/SteamLib/)
 
 C# implementation/wrapper around the OpenSteamworks library
