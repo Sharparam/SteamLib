@@ -71,7 +71,7 @@ namespace Sharparam.SteamLib
         public bool IsDisposed { get; private set; }
 
         public readonly LocalUser LocalUser;
-        public readonly FriendsList Friends;
+        public readonly Friends Friends;
 
         private Callback<PersonaStateChange_t> _personaStateChange;
         private Callback<FriendProfileInfoResponse_t> _friendProfileInfoResponse;
@@ -171,7 +171,7 @@ namespace Sharparam.SteamLib
             _friendChatMessage = new Callback<FriendChatMsg_t>(HandleFriendChatMessage);
 
             LocalUser = new LocalUser(this);
-            Friends = new FriendsList(this);
+            Friends = new Friends(this);
 
             // Spawn dispatch thread
             CallbackDispatcher.SpawnDispatchThread(_pipe);

@@ -46,7 +46,7 @@
     <Compile Include="Message.cs" />
     <Compile Include="Events\MessageEventArgs.cs" />
     <Compile Include="Friend.cs" />
-    <Compile Include="FriendsList.cs" />
+    <Compile Include="Friends.cs" />
     <Compile Include="LocalUser.cs" />
     <Compile Include="Logging\LogManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

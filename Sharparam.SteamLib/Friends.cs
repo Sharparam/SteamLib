@@ -30,7 +30,7 @@ using Steam4NET;
 
 namespace Sharparam.SteamLib
 {
-    public class FriendsList : ReadOnlyObservableCollection<Friend>
+    public class Friends : ReadOnlyObservableCollection<Friend>
     {
         private readonly Steam _steam;
 
@@ -38,7 +38,7 @@ namespace Sharparam.SteamLib
 
         private bool _updating;
 
-        private FriendsList(Steam steam, ObservableCollection<Friend> list) : base(list)
+        private Friends(Steam steam, ObservableCollection<Friend> list) : base(list)
         {
             _steam = steam;
             _list = list;
@@ -46,7 +46,7 @@ namespace Sharparam.SteamLib
             Update();
         }
 
-        internal FriendsList(Steam steam) : this(steam, new ObservableCollection<Friend>())
+        internal Friends(Steam steam) : this(steam, new ObservableCollection<Friend>())
         {
             
         }
