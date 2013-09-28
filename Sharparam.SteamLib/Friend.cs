@@ -98,6 +98,22 @@ namespace Sharparam.SteamLib
             get { return MessageHistory.Where(m => m.Type == EChatEntryType.k_EChatEntryTypeChatMsg); }
         }
 
+        public bool InGame
+        {
+            get
+            {
+                try
+                {
+                    var gameInfo = new FriendGameInfo_t();
+                    return _steam.ClientFriends.GetFriendGamePlayed(Id, ref gameInfo);
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
         internal Friend(Steam steam, CSteamID id, ObservableCollection<Message> oldChatHistory = null)
         {
             _log = LogManager.GetLogger(this);

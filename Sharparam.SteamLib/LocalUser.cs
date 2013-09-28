@@ -47,6 +47,22 @@ namespace Sharparam.SteamLib
 
         public string StateText { get { return Steam.StateToString(State); } }
 
+        public bool InGame
+        {
+            get
+            {
+                try
+                {
+                    var gameInfo = new FriendGameInfo_t();
+                    return _steam.ClientFriends.GetFriendGamePlayed(Id, ref gameInfo);
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
         internal LocalUser(Steam steam)
         {
             _steam = steam;

@@ -197,30 +197,6 @@ namespace Sharparam.SteamLib
             if (IsDisposed)
                 return;
 
-            if (_personaStateChange != null)
-            {
-                _personaStateChange.UnRegister();
-                _personaStateChange = null;
-            }
-
-            if (_friendProfileInfoResponse != null)
-            {
-                _friendProfileInfoResponse.UnRegister();
-                _friendProfileInfoResponse = null;
-            }
-
-            if (_friendAdded != null)
-            {
-                _friendAdded.UnRegister();
-                _friendAdded = null;
-            }
-
-            if (_friendChatMessage != null)
-            {
-                _friendChatMessage.UnRegister();
-                _friendChatMessage = null;
-            }
-
             CallbackDispatcher.StopDispatchThread(_pipe);
 
             IsDisposed = true;
