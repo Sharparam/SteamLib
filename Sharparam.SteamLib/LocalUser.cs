@@ -27,6 +27,8 @@ namespace Sharparam.SteamLib
 {
     public sealed class LocalUser : IEquatable<CSteamID>, IEquatable<Friend>, IEquatable<LocalUser>
     {
+        public event EventHandler StateChanged;
+
         private readonly Steam _steam;
 
         public readonly CSteamID Id;
@@ -49,6 +51,18 @@ namespace Sharparam.SteamLib
         {
             _steam = steam;
             Id = _steam.SteamUser.GetSteamID();
+        }
+
+        private void OnStateChanged()
+        {
+            var func = StateChanged;
+            if (func != null)
+                func(this, null);
+        }
+
+        internal void NotifyStateChanged()
+        {
+            OnStateChanged();
         }
 
         public override int GetHashCode()

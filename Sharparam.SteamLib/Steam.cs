@@ -72,7 +72,7 @@ namespace Sharparam.SteamLib
 
         public readonly LocalUser LocalUser;
         public readonly Friends Friends;
-
+ 
         private Callback<PersonaStateChange_t> _personaStateChange;
         private Callback<FriendProfileInfoResponse_t> _friendProfileInfoResponse;
         private Callback<FriendAdded_t> _friendAdded; 
@@ -272,7 +272,11 @@ namespace Sharparam.SteamLib
 
         private void HandlePersonaStateChange(PersonaStateChange_t param)
         {
-            Friends.NotifyStateChanged(new CSteamID(param.m_ulSteamID));
+            var id = new CSteamID(param.m_ulSteamID);
+            if (id == LocalUser)
+                LocalUser.NotifyStateChanged();
+            else
+                Friends.NotifyStateChanged(new CSteamID(param.m_ulSteamID));
         }
 
         private void HandleFriendProfileInfoResponse(FriendProfileInfoResponse_t param)
