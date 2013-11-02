@@ -104,8 +104,14 @@ namespace Sharparam.SteamLib
             {
                 try
                 {
-                    var gameInfo = new FriendGameInfo_t();
-                    return _steam.ClientFriends.GetFriendGamePlayed(Id, ref gameInfo);
+                    ulong gameId = 0;
+                    uint gameIp = 0;
+                    ushort gamePort = 0;
+                    ushort queryPort = 0;
+                    return
+                        _steam.SteamFriends002.GetFriendGamePlayed(Id, ref gameId, ref gameIp, ref gamePort,
+                                                                   ref queryPort) &&
+                        gameId != 0;
                 }
                 catch
                 {
