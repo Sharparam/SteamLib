@@ -81,7 +81,6 @@ namespace Sharparam.SteamLib
                 }
                 return nick;
             }
-
             set
             {
                 _steam.ClientFriends.SetPlayerNickname(Id, value);
