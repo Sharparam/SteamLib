@@ -66,6 +66,7 @@ namespace Sharparam.SteamLib
 
         public string Name { get { return _steam.SteamFriends002.GetFriendPersonaName(Id); } }
 
+        /* Disabled due to incompatibilities in recent Steam updates
         public string Nickname
         {
             get
@@ -87,6 +88,7 @@ namespace Sharparam.SteamLib
                 OnPropertyChanged("Nickname");
             }
         }
+        */
 
         public Bitmap SmallAvatar { get { return _steam.GetSmallAvatar(Id); } }
         public Bitmap MediumAvatar { get { return _steam.GetMediumAvatar(Id); } }

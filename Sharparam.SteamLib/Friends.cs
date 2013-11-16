@@ -140,12 +140,13 @@ namespace Sharparam.SteamLib
                                                                          : CompareOptions.IgnoreCase) >= 0);
         }
 
+        /* Disabled due to incompatibilities in recent Steam updates
         public Friend GetFriendByNickname(string name, bool caseSensitive = true)
         {
             return
                 this.FirstOrDefault(
                     f =>
-                    f.Name.Equals(name,
+                    f.Nickame.Equals(name,
                                   caseSensitive
                                       ? StringComparison.InvariantCulture
                                       : StringComparison.InvariantCultureIgnoreCase));
@@ -167,7 +168,7 @@ namespace Sharparam.SteamLib
             return
                 this.Where(
                     f =>
-                    f.Name.Equals(name,
+                    f.Nickname.Equals(name,
                                   caseSensitive
                                       ? StringComparison.InvariantCulture
                                       : StringComparison.InvariantCultureIgnoreCase));
@@ -183,6 +184,7 @@ namespace Sharparam.SteamLib
                                                                          ? CompareOptions.None
                                                                          : CompareOptions.IgnoreCase) >= 0);
         }
+        */
 
         public IEnumerable<Friend> GetFriendsByState(EPersonaState state)
         {

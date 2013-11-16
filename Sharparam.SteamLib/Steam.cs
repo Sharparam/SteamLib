@@ -54,8 +54,11 @@ namespace Sharparam.SteamLib
         internal readonly ISteamUser016 SteamUser;
         internal readonly ISteamFriends002 SteamFriends002;
         internal readonly ISteamFriends013 SteamFriends013;
+
+        /* Disabled due to incompatibilities in recent Steam updates
         internal readonly IClientEngine ClientEngine;
         internal readonly IClientFriends ClientFriends;
+        */
 
         private static readonly Dictionary<EPersonaState, string> StateMapping = new Dictionary<EPersonaState, string>
         {
@@ -148,6 +151,7 @@ namespace Sharparam.SteamLib
                 throw new SteamException("Failed to obtain Steam friends (013)");
             }
 
+            /* Disabled due to incompatibilities in recent Steam updates
             ClientEngine = Steamworks.CreateInterface<IClientEngine>();
 
             if (ClientEngine == null)
@@ -163,6 +167,7 @@ namespace Sharparam.SteamLib
                 _log.Error("Failed to obtain client friends");
                 throw new SteamException("Failed to obtain client friends");
             }
+            */
 
             // Set up callbacks
             _personaStateChange = new Callback<PersonaStateChange_t>(HandlePersonaStateChange);
