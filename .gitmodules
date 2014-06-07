@@ -1,0 +1,3 @@
+[submodule "Steam4NET"]
+	path = Steam4NET
+	url = git://github.com/SteamRE/Steam4NET.git
