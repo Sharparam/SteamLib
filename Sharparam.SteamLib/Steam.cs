@@ -170,10 +170,10 @@ namespace Sharparam.SteamLib
             */
 
             // Set up callbacks
-            _personaStateChange = new Callback<PersonaStateChange_t>(HandlePersonaStateChange);
-            _friendProfileInfoResponse = new Callback<FriendProfileInfoResponse_t>(HandleFriendProfileInfoResponse);
-            _friendAdded = new Callback<FriendAdded_t>(HandleFriendAdded);
-            _friendChatMessage = new Callback<FriendChatMsg_t>(HandleFriendChatMessage);
+            _personaStateChange = new Callback<PersonaStateChange_t>(HandlePersonaStateChange, PersonaStateChange_t.k_iCallback);
+            _friendProfileInfoResponse = new Callback<FriendProfileInfoResponse_t>(HandleFriendProfileInfoResponse, FriendProfileInfoResponse_t.k_iCallback);
+            _friendAdded = new Callback<FriendAdded_t>(HandleFriendAdded, FriendAdded_t.k_iCallback);
+            _friendChatMessage = new Callback<FriendChatMsg_t>(HandleFriendChatMessage, FriendChatMsg_t.k_iCallback);
 
             LocalUser = new LocalUser(this);
             Friends = new Friends(this);
@@ -329,7 +329,8 @@ namespace Sharparam.SteamLib
         {
             if (type == EChatEntryType.k_EChatEntryTypeEmote)
                 _log.Warn("Steam no longer supports sending emotes to chat");
-            SteamFriends002.SendMsgToFriend(receiver, type, Encoding.UTF8.GetBytes(message));
+            var msgData = Encoding.UTF8.GetBytes(message);
+            SteamFriends002.SendMsgToFriend(receiver, type, msgData, msgData.Length + 1);
         }
 
         #endregion Steam Methods
