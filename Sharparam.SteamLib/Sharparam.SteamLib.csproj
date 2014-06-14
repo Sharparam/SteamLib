@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -45,9 +46,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Callback.cs" />
-    <Compile Include="CallbackDispatcher.cs" />
-    <Compile Include="ICallback.cs" />
+    <Compile Include="App.cs" />
+    <Compile Include="Apps.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="Events\MessageEventArgs.cs" />
     <Compile Include="Friend.cs" />
@@ -62,9 +62,13 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Steam4NET\Steam4NET\Steam4NET.csproj">
-      <Project>{092ead98-f052-4f72-8c29-8ed93a5936af}</Project>
+    <ProjectReference Include="..\open-steamworks\Steam4NET2\Steam4NET2\Steam4NET.csproj">
+      <Project>{1a204257-fe82-4bbe-9ed4-40694821c31f}</Project>
       <Name>Steam4NET</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VDF\VDF.csproj">
+      <Project>{8392b97a-0ea5-489b-92a3-bbe9cfccb5a5}</Project>
+      <Name>VDF</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

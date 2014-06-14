@@ -1,3 +1,9 @@
 [submodule "Steam4NET"]
 	path = Steam4NET
-	url = git://github.com/SteamRE/Steam4NET.git
+	url = git://github.com/Sharparam/Steam4NET.git
+[submodule "open-steamworks"]
+	path = open-steamworks
+	url = git://github.com/Sharparam/open-steamworks.git
+[submodule "VDF"]
+	path = VDF
+	url = git://github.com/sanmadjack/VDF.git
