@@ -66,7 +66,6 @@ namespace Sharparam.SteamLib
 
         public string Name { get { return _steam.SteamFriends002.GetFriendPersonaName(Id); } }
 
-        /* Disabled due to incompatibilities in recent Steam updates
         public string Nickname
         {
             get
@@ -74,7 +73,7 @@ namespace Sharparam.SteamLib
                 string nick;
                 try
                 {
-                    nick = _steam.ClientFriends.GetPlayerNickname(Id);
+                    nick = _steam.SteamFriends014.GetPlayerNickname(Id);
                 }
                 catch (ArgumentNullException) // Nick has not been set
                 {
@@ -82,13 +81,15 @@ namespace Sharparam.SteamLib
                 }
                 return nick;
             }
+
+            /*
             set
             {
-                _steam.ClientFriends.SetPlayerNickname(Id, value);
+                _steam.SteamFriends014.SetPlayerNickname(Id, value);
                 OnPropertyChanged("Nickname");
             }
+            */
         }
-        */
 
         public Bitmap SmallAvatar { get { return _steam.GetSmallAvatar(Id); } }
         public Bitmap MediumAvatar { get { return _steam.GetMediumAvatar(Id); } }

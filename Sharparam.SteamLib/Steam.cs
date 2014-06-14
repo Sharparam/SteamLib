@@ -30,6 +30,8 @@ using Steam4NET;
 
 namespace Sharparam.SteamLib
 {
+    using System.IO;
+
     public class Steam : IDisposable
     {
         public event EventHandler<MessageEventArgs> Message;
@@ -49,16 +51,13 @@ namespace Sharparam.SteamLib
         private readonly int _pipe;
         private readonly int _user;
 
-        internal readonly ISteamClient012 SteamClient;
-        internal readonly ISteamUtils005 SteamUtils;
-        internal readonly ISteamUser016 SteamUser;
+        internal readonly ISteamClient012 SteamClient012;
+        internal readonly ISteamUtils005 SteamUtils005;
+        internal readonly ISteamUser016 SteamUser016;
         internal readonly ISteamFriends002 SteamFriends002;
-        internal readonly ISteamFriends013 SteamFriends013;
-
-        /* Disabled due to incompatibilities in recent Steam updates
-        internal readonly IClientEngine ClientEngine;
-        internal readonly IClientFriends ClientFriends;
-        */
+        internal readonly ISteamFriends014 SteamFriends014;
+        internal readonly ISteamApps001 SteamApps001;
+        internal readonly ISteamApps006 SteamApps006;
 
         private static readonly Dictionary<EPersonaState, string> StateMapping = new Dictionary<EPersonaState, string>
         {
@@ -73,13 +72,19 @@ namespace Sharparam.SteamLib
 
         public bool IsDisposed { get; private set; }
 
+        public readonly string SteamInstallPath;
+
+        public readonly string SteamConfigPath;
+
         public readonly LocalUser LocalUser;
         public readonly Friends Friends;
+        public readonly Apps Apps;
  
         private Callback<PersonaStateChange_t> _personaStateChange;
         private Callback<FriendProfileInfoResponse_t> _friendProfileInfoResponse;
-        private Callback<FriendAdded_t> _friendAdded; 
-        private Callback<FriendChatMsg_t> _friendChatMessage; 
+        private Callback<FriendAdded_t> _friendAdded;
+        private Callback<FriendChatMsg_t> _friendChatMessage;
+        private Callback<AppEventStateChange_t> _appEventStateChange;
 
         #region Constructor
 
@@ -89,21 +94,27 @@ namespace Sharparam.SteamLib
 
             _log.Info("Steam initializing...");
 
+            Environment.SetEnvironmentVariable("SteamAppId", "480");
+
             if (!Steamworks.Load())
             {
                 _log.Error("Failed to load Steamworks.");
                 throw new SteamException("Failed to load Steamworks");
             }
 
-            SteamClient = Steamworks.CreateInterface<ISteamClient012>();
+            _log.Debug("Creating SteamClient012 interface...");
 
-            if (SteamClient == null)
+            SteamClient012 = Steamworks.CreateInterface<ISteamClient012>();
+
+            if (SteamClient012 == null)
             {
-                _log.Error("Failed to create SteamClient interface");
-                throw new SteamException("Failed to create SteamClient interface");
+                _log.Error("Failed to create SteamClient012 interface");
+                throw new SteamException("Failed to create SteamClient012 interface");
             }
 
-            _pipe = SteamClient.CreateSteamPipe();
+            _log.Debug("Creating steam pipe and connecting to global user...");
+
+            _pipe = SteamClient012.CreateSteamPipe();
 
             if (_pipe == 0)
             {
@@ -111,7 +122,7 @@ namespace Sharparam.SteamLib
                 throw new SteamException("Failed to create Steam pipe");
             }
 
-            _user = SteamClient.ConnectToGlobalUser(_pipe);
+            _user = SteamClient012.ConnectToGlobalUser(_pipe);
 
             if (_user == 0)
             {
@@ -119,23 +130,29 @@ namespace Sharparam.SteamLib
                 throw new SteamException("Failed to connect to global user");
             }
 
-            SteamUtils = SteamClient.GetISteamUtils<ISteamUtils005>(_pipe);
+            _log.Debug("Getting SteamUtils005 interface...");
 
-            if (SteamUtils == null)
+            SteamUtils005 = SteamClient012.GetISteamUtils<ISteamUtils005>(_pipe);
+
+            if (SteamUtils005 == null)
             {
                 _log.Error("Failed to obtain Steam utils");
                 throw new SteamException("Failed to obtain Steam utils");
             }
 
-            SteamUser = SteamClient.GetISteamUser<ISteamUser016>(_user, _pipe);
+            _log.Debug("Getting SteamUser016 interface...");
 
-            if (SteamUser == null)
+            SteamUser016 = SteamClient012.GetISteamUser<ISteamUser016>(_user, _pipe);
+
+            if (SteamUser016 == null)
             {
                 _log.Error("Failed to obtain Steam user interface");
                 throw new SteamException("Failed to obtain Steam user interface");
             }
 
-            SteamFriends002 = SteamClient.GetISteamFriends<ISteamFriends002>(_user, _pipe);
+            _log.Debug("Getting SteamFriends002 interface...");
+
+            SteamFriends002 = SteamClient012.GetISteamFriends<ISteamFriends002>(_user, _pipe);
 
             if (SteamFriends002 == null)
             {
@@ -143,43 +160,54 @@ namespace Sharparam.SteamLib
                 throw new SteamException("Failed to obtain Steam friends (002)");
             }
 
-            SteamFriends013 = SteamClient.GetISteamFriends<ISteamFriends013>(_user, _pipe);
+            _log.Debug("Getting SteamFriends014 interface...");
 
-            if (SteamFriends013 == null)
+            SteamFriends014 = SteamClient012.GetISteamFriends<ISteamFriends014>(_user, _pipe);
+
+            if (SteamFriends014 == null)
             {
                 _log.Error("Failed to obtain Steam friends (013)");
                 throw new SteamException("Failed to obtain Steam friends (013)");
             }
 
-            /* Disabled due to incompatibilities in recent Steam updates
-            ClientEngine = Steamworks.CreateInterface<IClientEngine>();
+            SteamApps001 = SteamClient012.GetISteamApps<ISteamApps001>(_user, _pipe);
 
-            if (ClientEngine == null)
+            if (SteamApps001 == null)
             {
-                _log.Error("Failed to create client engine");
-                throw new SteamException("Failed to create client engine");
+                _log.Error("Failed to obtain SteamApps006");
+                throw new SteamException("Failed to obtain SteamApps006");
             }
 
-            ClientFriends = ClientEngine.GetIClientFriends<IClientFriends>(_user, _pipe);
-
-            if (ClientFriends == null)
+            SteamApps006 = SteamClient012.GetISteamApps<ISteamApps006>(_user, _pipe);
+            
+            if (SteamApps006 == null)
             {
-                _log.Error("Failed to obtain client friends");
-                throw new SteamException("Failed to obtain client friends");
+                _log.Error("Failed to obtain Steam apps (006)");
+                throw new SteamException("Failed to obtain Steam apps (006)");
             }
-            */
+
+            SteamInstallPath = Steamworks.GetInstallPath();
+            SteamConfigPath = Path.Combine(SteamInstallPath, "config", "config.vdf");
+
+            _log.DebugFormat("Steam installed at {0}, config at {1}", SteamInstallPath, SteamConfigPath);
 
             // Set up callbacks
-            _personaStateChange = new Callback<PersonaStateChange_t>(HandlePersonaStateChange, PersonaStateChange_t.k_iCallback);
-            _friendProfileInfoResponse = new Callback<FriendProfileInfoResponse_t>(HandleFriendProfileInfoResponse, FriendProfileInfoResponse_t.k_iCallback);
-            _friendAdded = new Callback<FriendAdded_t>(HandleFriendAdded, FriendAdded_t.k_iCallback);
-            _friendChatMessage = new Callback<FriendChatMsg_t>(HandleFriendChatMessage, FriendChatMsg_t.k_iCallback);
+            _log.Debug("Setting up Steam callbacks...");
+            _personaStateChange = new Callback<PersonaStateChange_t>(HandlePersonaStateChange);
+            _friendProfileInfoResponse = new Callback<FriendProfileInfoResponse_t>(HandleFriendProfileInfoResponse);
+            _friendAdded = new Callback<FriendAdded_t>(HandleFriendAdded);
+            _friendChatMessage = new Callback<FriendChatMsg_t>(HandleFriendChatMessage);
+            _appEventStateChange = new Callback<AppEventStateChange_t>(HandleAppEventStateChange);
 
             LocalUser = new LocalUser(this);
             Friends = new Friends(this);
+            Apps = new Apps(this);
 
             // Spawn dispatch thread
             CallbackDispatcher.SpawnDispatchThread(_pipe);
+
+            TSteamSubscriptionStats stats;
+            
         }
 
         #endregion Constructor
@@ -316,6 +344,14 @@ namespace Sharparam.SteamLib
             }
         }
 
+        private void HandleAppEventStateChange(AppEventStateChange_t param)
+        {
+            _log.DebugFormat("HandleAppEventStateChange: params: {0}, {1}, {2}, {3}", param.m_nAppID, param.m_eOldState, param.m_eNewState, param.m_eAppError);
+            var appId = param.m_nAppID;
+            var newState = param.m_eNewState;
+            Apps.HandleAppEventStateChangeEvent(appId, newState);
+        }
+
         #endregion Steam Event Handlers
 
         #region Steam Methods
@@ -330,7 +366,14 @@ namespace Sharparam.SteamLib
             if (type == EChatEntryType.k_EChatEntryTypeEmote)
                 _log.Warn("Steam no longer supports sending emotes to chat");
             var msgData = Encoding.UTF8.GetBytes(message);
-            SteamFriends002.SendMsgToFriend(receiver, type, msgData, msgData.Length + 1);
+            SteamFriends002.SendMsgToFriend(receiver, type, msgData);
+        }
+
+        public string GetAppData(uint id, string key)
+        {
+            var sb = new StringBuilder(255);
+            SteamApps001.GetAppData(id, key, sb);
+            return sb.ToString();
         }
 
         #endregion Steam Methods
@@ -344,12 +387,12 @@ namespace Sharparam.SteamLib
         {
             uint width = 0;
             uint height = 0;
-            if (!SteamUtils.GetImageSize(handle, ref width, ref height))
+            if (!SteamUtils005.GetImageSize(handle, ref width, ref height))
                 return null;
 
             var size = 4 * width * height;
             var buffer = new byte[size];
-            if (!SteamUtils.GetImageRGBA(handle, buffer, (int)size))
+            if (!SteamUtils005.GetImageRGBA(handle, buffer, (int)size))
                 return null;
 
             var bitmap = new Bitmap((int)width, (int)height);
@@ -374,16 +417,16 @@ namespace Sharparam.SteamLib
             switch (size)
             {
                 case EAvatarSize.k_EAvatarSize32x32:
-                    handle = SteamFriends013.GetSmallFriendAvatar(id);
+                    handle = SteamFriends014.GetSmallFriendAvatar(id);
                     break;
                 case EAvatarSize.k_EAvatarSize64x64:
-                    handle = SteamFriends013.GetMediumFriendAvatar(id);
+                    handle = SteamFriends014.GetMediumFriendAvatar(id);
                     break;
                 case EAvatarSize.k_EAvatarSize184x184:
-                    handle = SteamFriends013.GetLargeFriendAvatar(id);
+                    handle = SteamFriends014.GetLargeFriendAvatar(id);
                     break;
                 default:
-                    handle = SteamFriends013.GetLargeFriendAvatar(id);
+                    handle = SteamFriends014.GetLargeFriendAvatar(id);
                     break;
             }
             var avatar = GetAvatarFromHandle(handle);

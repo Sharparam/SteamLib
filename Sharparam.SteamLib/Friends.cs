@@ -1,4 +1,4 @@
-﻿/* FriendsList.cs
+﻿/* Friends.cs
  *
  * Copyright © 2013 by Adam Hellberg.
  * 
@@ -140,13 +140,12 @@ namespace Sharparam.SteamLib
                                                                          : CompareOptions.IgnoreCase) >= 0);
         }
 
-        /* Disabled due to incompatibilities in recent Steam updates
         public Friend GetFriendByNickname(string name, bool caseSensitive = true)
         {
             return
                 this.FirstOrDefault(
                     f =>
-                    f.Nickame.Equals(name,
+                    f.Nickname.Equals(name,
                                   caseSensitive
                                       ? StringComparison.InvariantCulture
                                       : StringComparison.InvariantCultureIgnoreCase));
@@ -184,7 +183,6 @@ namespace Sharparam.SteamLib
                                                                          ? CompareOptions.None
                                                                          : CompareOptions.IgnoreCase) >= 0);
         }
-        */
 
         public IEnumerable<Friend> GetFriendsByState(EPersonaState state)
         {

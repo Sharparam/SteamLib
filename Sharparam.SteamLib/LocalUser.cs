@@ -72,7 +72,7 @@ namespace Sharparam.SteamLib
         internal LocalUser(Steam steam)
         {
             _steam = steam;
-            Id = _steam.SteamUser.GetSteamID();
+            Id = _steam.SteamUser016.GetSteamID();
         }
 
         private void OnStateChanged()
