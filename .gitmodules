@@ -1,6 +1,3 @@
-[submodule "Steam4NET"]
-	path = Steam4NET
-	url = git://github.com/Sharparam/Steam4NET.git
 [submodule "open-steamworks"]
 	path = open-steamworks
 	url = git://github.com/Sharparam/open-steamworks.git
