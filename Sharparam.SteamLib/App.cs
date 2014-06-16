@@ -262,20 +262,55 @@ namespace Sharparam.SteamLib
                 client.DownloadFile(url, file);
                 IconBitmap = (Bitmap)Image.FromFile(file);
             }
-            catch (WebException)
+            catch (WebException ex)
             {
+                _log.ErrorFormat("Failed to download icon for app {0}, WebException with message: {1}", Id, ex.Message);
                 IconBitmap = null;
             }
         }
 
         private void DownloadLogo()
         {
-            
+            _log.DebugFormat("Downloading logo for app {0}", Id);
+
+            CheckDownloadCache();
+
+            var file = string.Format(CachePathFormat, Id, Logo);
+            var url = string.Format(ImageUrlFormat, Id, Logo);
+
+            var client = new WebClient();
+            try
+            {
+                client.DownloadFile(url, file);
+                LogoBitmap = (Bitmap)Image.FromFile(file);
+            }
+            catch (WebException ex)
+            {
+                _log.ErrorFormat("Failed to download logo for app {0}, WebException with message: {1}", Id, ex.Message);
+                LogoBitmap = null;
+            }
         }
 
         private void DownloadSmallLogo()
         {
-            
+            _log.DebugFormat("Downloading small logo for app {0}", Id);
+
+            CheckDownloadCache();
+
+            var file = string.Format(CachePathFormat, Id, SmallLogo);
+            var url = string.Format(ImageUrlFormat, Id, SmallLogo);
+
+            var client = new WebClient();
+            try
+            {
+                client.DownloadFile(url, file);
+                SmallLogoBitmap = (Bitmap)Image.FromFile(file);
+            }
+            catch (WebException ex)
+            {
+                _log.ErrorFormat("Failed to download small logo for app {0}, WebException with message: {1}", Id, ex.Message);
+                SmallLogoBitmap = null;
+            }
         }
 
         private void OnPropertyChanged(string property)

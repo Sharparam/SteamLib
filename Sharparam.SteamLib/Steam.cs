@@ -33,8 +33,6 @@ namespace Sharparam.SteamLib
     using System.IO;
     using System.Threading;
 
-    using Sharparam.SteamLib.Utils;
-
     public class Steam : IDisposable
     {
         public event EventHandler<MessageEventArgs> Message;
@@ -67,8 +65,6 @@ namespace Sharparam.SteamLib
         internal readonly ISteamFriends014 SteamFriends014;
         internal readonly ISteamApps001 SteamApps001;
         internal readonly ISteamApps006 SteamApps006;
-
-        internal readonly Downloader Downloader;
 
         private static readonly Dictionary<EPersonaState, string> StateMapping = new Dictionary<EPersonaState, string>
         {
@@ -216,8 +212,6 @@ namespace Sharparam.SteamLib
 
             // Spawn dispatch thread
             CallbackDispatcher.SpawnDispatchThread(_pipe);
-
-            Downloader = new Downloader();
         }
 
         #endregion Constructor
