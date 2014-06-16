@@ -46,6 +46,8 @@ namespace Sharparam.SteamLib
 
         public string Name { get { return _steam.GetAppData(Id, "name"); } }
 
+        public string Icon { get { return _steam.GetAppData(Id, "logo"); } }
+
         public EAppState State
         {
             get
