@@ -31,6 +31,9 @@ using Steam4NET;
 namespace Sharparam.SteamLib
 {
     using System.IO;
+    using System.Threading;
+
+    using Sharparam.SteamLib.Utils;
 
     public class Steam : IDisposable
     {
@@ -46,6 +49,12 @@ namespace Sharparam.SteamLib
         public event EventHandler<MessageEventArgs> ChatMessageSent;
         public event EventHandler<MessageEventArgs> TypingMessageSent;
 
+        private const string AppImageUrlFormat = "http://media.steampowered.com/steamcommunity/public/images/apps/{0}/{1}.jpg";
+
+        private const string AppImageCacheDirectory = "cache";
+
+        private static readonly string AppImageCacheFormat = Path.Combine(AppImageCacheDirectory, "{0}_{1}.jpg");
+
         private readonly log4net.ILog _log;
 
         private readonly int _pipe;
@@ -58,6 +67,8 @@ namespace Sharparam.SteamLib
         internal readonly ISteamFriends014 SteamFriends014;
         internal readonly ISteamApps001 SteamApps001;
         internal readonly ISteamApps006 SteamApps006;
+
+        internal readonly Downloader Downloader;
 
         private static readonly Dictionary<EPersonaState, string> StateMapping = new Dictionary<EPersonaState, string>
         {
@@ -206,8 +217,7 @@ namespace Sharparam.SteamLib
             // Spawn dispatch thread
             CallbackDispatcher.SpawnDispatchThread(_pipe);
 
-            TSteamSubscriptionStats stats;
-            
+            Downloader = new Downloader();
         }
 
         #endregion Constructor
@@ -449,5 +459,37 @@ namespace Sharparam.SteamLib
         }
 
         #endregion Avatar Methods
+
+        #region App Image Methods
+
+        public string GetAppImageUrl(uint id, string image)
+        {
+            return string.Format(AppImageUrlFormat, id, image);
+        }
+
+        public string GetAppImageCachePath(uint id, string image)
+        {
+            return string.Format(AppImageCacheFormat, id, image);
+        }
+
+        public void DownloadAppImage(uint id, string image)
+        {
+            if (!Directory.Exists(AppImageCacheDirectory))
+                Directory.CreateDirectory(AppImageCacheDirectory);
+
+            var cachePath = GetAppImageCachePath(id, image);
+
+            if (File.Exists(cachePath))
+                return;
+
+            ThreadPool.QueueUserWorkItem(DownloadAppImageWork, GetAppImageUrl(id, image));
+        }
+
+        private void DownloadAppImageWork(object state)
+        {
+            
+        }
+
+        #endregion App Image Methods
     }
 }

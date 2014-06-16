@@ -24,7 +24,11 @@ namespace Sharparam.SteamLib
 {
     using System;
     using System.ComponentModel;
+    using System.Drawing;
+    using System.IO;
+    using System.Net;
     using System.Text;
+    using System.Threading;
 
     using Sharparam.SteamLib.Logging;
 
@@ -33,6 +37,12 @@ namespace Sharparam.SteamLib
     public sealed class App : IEquatable<App>, IEquatable<UInt32>, INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
+
+        private const string ImageUrlFormat = "http://media.steampowered.com/steamcommunity/public/images/apps/{0}/{1}.jpg";
+
+        private static readonly string CacheDirectory = Path.Combine(Environment.CurrentDirectory, "cache");
+
+        private static readonly string CachePathFormat = Path.Combine(CacheDirectory, "{0}_{1}.jpg");
 
         private readonly log4net.ILog _log;
 
@@ -44,9 +54,115 @@ namespace Sharparam.SteamLib
 
         private EAppState _state;
 
+        private Bitmap _iconBitmap;
+
+        private Bitmap _logoBitmap;
+
+        private Bitmap _smallLogoBitmap;
+
         public string Name { get { return _steam.GetAppData(Id, "name"); } }
 
-        public string Icon { get { return _steam.GetAppData(Id, "logo"); } }
+        public string Icon { get { return _steam.GetAppData(Id, "icon"); } }
+
+        public string Logo { get { return _steam.GetAppData(Id, "logo"); } }
+
+        public string SmallLogo { get { return _steam.GetAppData(Id, "logo_small"); } }
+
+        public string IconUrl
+        {
+            get
+            {
+                return string.Format(ImageUrlFormat, Id, Icon);
+            }
+        }
+
+        public string LogoUrl
+        {
+            get
+            {
+                return string.Format(ImageUrlFormat, Id, Logo);
+            }
+        }
+
+        public string SmallLogoUrl
+        {
+            get
+            {
+                return string.Format(ImageUrlFormat, Id, SmallLogo);
+            }
+        }
+
+        public Bitmap IconBitmap
+        {
+            private set
+            {
+                _iconBitmap = value;
+                NotifyIconBitmapChanged();
+            }
+            get
+            {
+                if (_iconBitmap != null)
+                    return _iconBitmap;
+
+                var file = string.Format(CachePathFormat, Id, Icon);
+                if (File.Exists(file))
+                {
+                    _iconBitmap = (Bitmap)Image.FromFile(file);
+                    return _iconBitmap;
+                }
+                
+                ThreadPool.QueueUserWorkItem(o => DownloadIcon());
+                return null;
+            }
+        }
+
+        public Bitmap LogoBitmap
+        {
+            private set
+            {
+                _logoBitmap = value;
+                NotifyLogoBitmapChanged();
+            }
+            get
+            {
+                if (_logoBitmap != null)
+                    return _logoBitmap;
+
+                var file = string.Format(CachePathFormat, Id, Logo);
+                if (File.Exists(file))
+                {
+                    _logoBitmap = (Bitmap)Image.FromFile(file);
+                    return _logoBitmap;
+                }
+
+                ThreadPool.QueueUserWorkItem(o => DownloadLogo());
+                return null;
+            }
+        }
+
+        public Bitmap SmallLogoBitmap
+        {
+            private set
+            {
+                _smallLogoBitmap = value;
+                NotifySmallLogoBitmapChanged();
+            }
+            get
+            {
+                if (_smallLogoBitmap != null)
+                    return _smallLogoBitmap;
+
+                var file = string.Format(CachePathFormat, Id, SmallLogo);
+                if (File.Exists(file))
+                {
+                    _smallLogoBitmap = (Bitmap)Image.FromFile(file);
+                    return _smallLogoBitmap;
+                }
+
+                ThreadPool.QueueUserWorkItem(o => DownloadSmallLogo());
+                return null;
+            }
+        }
 
         public EAppState State
         {
@@ -125,6 +241,43 @@ namespace Sharparam.SteamLib
             System.Diagnostics.Process.Start("steam://run/" + Id);
         }
 
+        private void CheckDownloadCache()
+        {
+            if (!Directory.Exists(CacheDirectory))
+                Directory.CreateDirectory(CacheDirectory);
+        }
+
+        private void DownloadIcon()
+        {
+            _log.DebugFormat("Downloading icon for app {0}", Id);
+
+            CheckDownloadCache();
+
+            var file = string.Format(CachePathFormat, Id, Icon);
+            var url = string.Format(ImageUrlFormat, Id, Icon);
+
+            var client = new WebClient();
+            try
+            {
+                client.DownloadFile(url, file);
+                IconBitmap = (Bitmap)Image.FromFile(file);
+            }
+            catch (WebException)
+            {
+                IconBitmap = null;
+            }
+        }
+
+        private void DownloadLogo()
+        {
+            
+        }
+
+        private void DownloadSmallLogo()
+        {
+            
+        }
+
         private void OnPropertyChanged(string property)
         {
             var handler = PropertyChanged;
@@ -138,6 +291,9 @@ namespace Sharparam.SteamLib
             NotifyStateChanged();
             NotifyInstalledChanged();
             NotifyPlayableChanged();
+            NotifyIconBitmapChanged();
+            NotifyLogoBitmapChanged();
+            NotifySmallLogoBitmapChanged();
         }
 
         internal void NotifyNameChanged()
@@ -160,6 +316,21 @@ namespace Sharparam.SteamLib
         {
             OnPropertyChanged("Playable");
             _log.DebugFormat("NotifyPlayableChanged, new value: {0}", Playable);
+        }
+
+        internal void NotifyIconBitmapChanged()
+        {
+            OnPropertyChanged("IconBitmap");
+        }
+
+        internal void NotifyLogoBitmapChanged()
+        {
+            OnPropertyChanged("LogoBitmap");
+        }
+
+        internal void NotifySmallLogoBitmapChanged()
+        {
+            OnPropertyChanged("SmallLogoBitmap");
         }
     }
 }
