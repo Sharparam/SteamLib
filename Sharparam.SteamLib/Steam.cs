@@ -101,8 +101,6 @@ namespace Sharparam.SteamLib
 
             _log.Info("Steam initializing...");
 
-            Environment.SetEnvironmentVariable("SteamAppId", "480");
-
             if (!Steamworks.Load())
             {
                 _log.Error("Failed to load Steamworks.");
